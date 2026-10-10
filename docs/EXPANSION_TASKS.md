@@ -1,18 +1,20 @@
 # Expansion task queue
 
-The current implementation is **T23: Convergence integration**, owned by Codex with Astra. It imports Copperwake, preserves the original Claude-authored Starfall source, ports Starfall to Fabric, expands each mod, and adds shared progression. Status: **done**. Implementation, full build, 45 combined GameTests and 10,696 domain checks pass locally and in GitHub CI. The original NeoForge build and the individual Fabric checks also pass. See [PR #3](https://github.com/Afuerta/MODs/pull/3) and the [validation record](VALIDATION.md).
+The previous implementation is **T23: Convergence integration**, owned by Codex with Astra. It imports Copperwake, preserves the original Claude-authored Starfall source, ports Starfall to Fabric, expands each mod, and adds shared progression. Status: **done**. Implementation, full build, 45 combined GameTests and 10,696 domain checks pass locally and in GitHub CI. The original NeoForge build and the individual Fabric checks also pass. See [PR #3](https://github.com/Afuerta/MODs/pull/3) and the [validation record](VALIDATION.md).
+
+The current implementation is **T24: Expedition expansion**, owned by Codex with Astra. Status: **in progress**. This coordinated pass implements Fabric tasks C02–C05 and C07: persistent exploration targets, earned armor, a cross-mod infusion station, Rustwild landmarks, and varied trial encounters. All changes share one integration branch and combined verification.
 
 Future tasks are scoped so several contributors can work independently. Claim a row and coordinate its owned paths before starting. Each task needs survival-obtainable recipes, translated guidance, applicable engine tests, and a focused pull request.
 
 | ID | Task | Suggested owner | Acceptance criteria | Status |
 | --- | --- | --- | --- | --- |
 | C01 | Multiplayer balance playtest | Claude + human | Record a 1-player and 4-player session through all tiers; measure costs, deaths and rewards; propose specific balance edits | ready |
-| C02 | Persistent Star Compass | Claude | Record at most 64 impacts per world; remove mined stars; compass uses vanilla lodestone component and persists across restart; test stale and unloaded targets | ready |
-| C03 | Starsteel armor | Claude | Four armor pieces, repair/enchantment tags and recipes; bounded clear-night set bonus; test equipment changes, daylight and dedicated server loading | ready |
-| C04 | Astral infusion station | Claude | Four authored recipes using all three mods; atomic input consumption and output; hopper rules; pause outside clear-night conditions; save/load and overflow tests | ready |
-| C05 | Rustwild expedition landmarks | Claude | Two original structures with walkable entrances and documented placement frequency; protect registry IDs; validate NBT, loot and terrain placement | ready |
+| C02 | Persistent Star Compass | Codex Starfall agent | Record at most 64 impacts per world; remove mined stars; compass uses vanilla lodestone component and persists across restart; test stale and unloaded targets | in progress |
+| C03 | Starsteel armor | Codex Starfall agent | Four armor pieces, repair/enchantment tags and recipes; bounded clear-night set bonus; test equipment changes, daylight and dedicated server loading | in progress |
+| C04 | Astral infusion station | Codex infusion agent | Four authored recipes using all three mods; atomic input consumption and output; hopper rules; pause outside clear-night conditions; save/load and overflow tests | in progress |
+| C05 | Rustwild expedition landmarks | Codex landmark agent | Two original structures with walkable entrances and documented placement frequency; protect registry IDs; validate NBT, loot and terrain placement | in progress |
 | C06 | Construct combat playtest | Claude + human | Verify every telegraph at normal latency; tune boss phase timing and cover behavior; record minimum viable gear and accessibility issues | ready |
-| C07 | Additional trial encounter types | Astra | At least three distinct wave patterns rather than health inflation; preserve eligible-player rewards, cleanup, conversions and ordinary trial loot rules | ready |
+| C07 | Additional trial encounter types | Astra | At least three distinct wave patterns rather than health inflation; preserve eligible-player rewards, cleanup, conversions and ordinary trial loot rules | in progress |
 | C08 | Party expedition contracts | Astra | Explicit opt-in roster capped at four; complete one shared objective; one reward per eligible UUID; handle death, leave, disconnect, timeout and restart | ready |
 | C09 | Constellation charting | Astra | Six discoverable clear-night observations with translated clues; persisted per-player discoveries; no repeated claim reward; test angular/time boundaries | ready |
 | C10 | Data-driven Convergence contracts | Codex or Claude | Reloadable validated definitions; reject unknown IDs, impossible counts and unsafe reward loops; deterministic ordering and stable saved progress | ready |
