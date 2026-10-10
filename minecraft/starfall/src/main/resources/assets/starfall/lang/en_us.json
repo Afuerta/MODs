@@ -79,5 +79,13 @@
   "item.starfall.star_compass.unbound": "No known Fallen Star in this dimension.",
   "item.starfall.star_compass.target": "Fallen Star: %s, %s, %s",
   "advancement.starfall.star_compass.title": "Follow Your Star",
-  "advancement.starfall.star_compass.description": "Craft a Star Compass to find fallen stars."
+  "advancement.starfall.star_compass.description": "Craft a Star Compass to find fallen stars.",
+  "item.starfall.starsteel_helmet": "Starsteel Helmet",
+  "item.starfall.starsteel_chestplate": "Starsteel Chestplate",
+  "item.starfall.starsteel_leggings": "Starsteel Leggings",
+  "item.starfall.starsteel_boots": "Starsteel Boots",
+  "item.starfall.starsteel_armor.tooltip": "Active under an open, clear Overworld night sky",
+  "item.starfall.starsteel_armor.bonus": "Full set: Night Vision and immunity to fall damage",
+  "advancement.starfall.forged_in_starlight.title": "Forged in Starlight",
+  "advancement.starfall.forged_in_starlight.description": "Collect a complete set of Starsteel armor."
 }

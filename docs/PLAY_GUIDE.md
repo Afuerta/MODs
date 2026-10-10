@@ -14,6 +14,17 @@ After your first impact, craft a **Star Compass** with four Star Shards around a
 
 Crater preflight protects block entities, constructed block types, border edges and unloaded terrain. It also records placement columns after installation. It cannot identify an older build made entirely from natural dirt or stone. For an existing world, set `craters.enabled` to `false` in `config/starfall.json` before exploring; stars then land without excavating craters.
 
+## Gear for the night
+
+Forge a **Starsteel armor set** using standard armor recipes: 5 ingots for the helmet, 8 for
+the chestplate, 7 for leggings and 4 for boots. The 24-ingot set offers 19 armor points and
+4 toughness, supports vanilla enchants and trims, and repairs with Starsteel Ingots.
+
+With every piece equipped, being outside under a clear Overworld night sky grants
+**Night Vision and fall protection**. Cover, rain, daylight, a different dimension or removing
+a piece ends fall protection immediately. Night Vision fades within 13 seconds without
+removing longer potion effects. Collect the complete set for **Forged in Starlight** and 50 XP.
+
 ## Rift trials
 
 Craft a **Rift Anchor** and place it on clear, flat, dry Overworld ground. Elemental Echoes come from ordinary hostile kills or their fallback crafting recipes. Use an Echo on the anchor to start a trial. Four aspects change the enemy mix: Verdant, Ember, Tidal and Hollow.

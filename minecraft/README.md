@@ -12,7 +12,7 @@ From this directory:
 
 On Windows, use `gradlew.bat` instead. `build` runs the four modules' checks, builds their release and source jars, runs the combined headless GameTests, and creates the pack. `combinedGameTest` runs the engine tests without repeating packaging. `modpack` builds and packages the release jars; it does not independently run verification. Run `build` before distributing a pack.
 
-The archive is `build/distributions/convergence-0.2.0-fabric-1.21.1.zip`. It contains exactly the four authored release jars, installation instructions, licenses, a version manifest, and SHA-256 checksums. Fabric Loader and Fabric API remain external requirements; see [pack/INSTALL.md](pack/INSTALL.md). The original NeoForge project at `../starfall/` remains a separate project and is excluded from this Fabric pack.
+The archive is `build/distributions/convergence-0.2.1-fabric-1.21.1.zip`. It contains exactly the four authored release jars, installation instructions, licenses, a version manifest, and SHA-256 checksums. Fabric Loader and Fabric API remain external requirements; see [pack/INSTALL.md](pack/INSTALL.md). The original NeoForge project at `../starfall/` remains a separate project and is excluded from this Fabric pack.
 
 ## Verification
 

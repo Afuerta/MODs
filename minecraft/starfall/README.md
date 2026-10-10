@@ -15,11 +15,13 @@ Fabric edition uses the same content IDs and text pixel art as the original NeoF
   Fallen Stars hurt players who stand on them without sneaking.
 - Turn shards and iron into Starsteel. The five Starsteel tools gain mining and attack bonuses
   under a clear night sky.
+- Forge a full **Starsteel armor** set to gain Night Vision and fall protection while Starlit.
+  Each piece uses normal armor crafting, enchanting, trimming and Starsteel Ingot repairs.
 - Use Stardust on crops for two growth pulses, or consume a Wishing Star for a temporary blessing.
 - Turn crater stone into **11 building variants**: Starstone and Starstone Brick stairs, slabs
   and walls; Polished Starstone with stairs, slabs and walls; and Chiseled Starstone.
   Use a crafting table or stonecutter. Slabs yield two per stonecutting input.
-- Follow six visible advancements from your first shard through a full Starsteel arsenal and a
+- Follow seven visible advancements from your first shard through a full Starsteel arsenal and a
   collection of celestial building materials.
 - Meteor showers increase the star rate for one night, with a configurable impact limit.
 
@@ -38,6 +40,7 @@ Use one edition of Starfall in a modpack; the original project in `../../starfal
 | 2 Stardust | 1 Star Shard |
 | Starsteel Ingot | 1 Iron Ingot + 4 Star Shards |
 | Starsteel tools | Standard tool shapes using Starsteel Ingots and sticks |
+| Starsteel armor | Standard armor shapes; 5 / 8 / 7 / 4 Starsteel Ingots |
 | Wishing Star | 8 Stardust surrounding a Gold Ingot |
 | 2 Star Lanterns | Glass in a plus shape around Stardust |
 | 4 Starstone Bricks | 4 Starstone in a square |
@@ -61,6 +64,34 @@ tooltip says no star is remembered. Changing dimension clears the old dimension'
 Player-placed Fallen Stars do not create new impact records.
 
 [View the 32-direction compass artwork](docs/star-compass-frames.png).
+
+## Starsteel armor
+
+[View the original armor artwork and texture layout](docs/starsteel-armor.png).
+
+Forge all four pieces with **24 Starsteel Ingots** total (96 Star Shards and 24 Iron Ingots).
+Obtaining an ingot unlocks the four recipes, including for players with existing advancement
+progress. Equip the complete set in its armor slots; pieces held in your hand do not count.
+
+| Piece | Ingots | Armor points | Durability |
+|---|---:|---:|---:|
+| Helmet | 5 | 3 | 297 |
+| Chestplate | 8 | 7 | 432 |
+| Leggings | 7 | 6 | 405 |
+| Boots | 4 | 3 | 351 |
+
+The complete set gives **19 armor points and 4 toughness**. Each piece has enchantability 18
+and repairs with Starsteel Ingots. Vanilla armor enchantments and armor trims are supported.
+
+**Starlit set bonus:** wear all four pieces outside under a clear Overworld sky between
+13,000 and 23,000 world-time ticks. Night Vision refreshes once per second without flickering.
+Fall-type damage, including landing on pointed dripstone, is prevented while the conditions
+hold. The set does not prevent fire, melee, projectile or void damage.
+
+Removing a piece, moving under cover, rain, dawn or leaving the Overworld ends fall protection
+immediately. Night Vision naturally fades within 13 seconds; longer, stronger and infinite
+effects from potions or other mods are preserved. This avoids deleting another source's effect.
+Collecting all four pieces earns **Forged in Starlight** and 50 XP once.
 
 ## Commands
 
@@ -98,7 +129,7 @@ farmland and modded blocks, so many wooded or built areas will not receive stars
 A star takes two seconds to land and repeats the complete safety check at impact. A blocked star
 fades without damage. Meteor flight, shower selection and the per-night launch budget reset on a
 server restart. At most eight stars can be in flight, and the night budget includes operator summons.
-Clear-night bonuses require open sky and apply to mining plus the primary vanilla melee strike.
+The Starsteel tool bonuses require open sky and apply to mining plus the primary vanilla melee strike.
 They do not increase projectiles, sweep strikes or damage from other mods such as an Arc Gauntlet.
 
 ## Building and resource checks

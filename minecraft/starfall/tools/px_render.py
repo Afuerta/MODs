@@ -95,7 +95,8 @@ def main():
             dest.parent.mkdir(parents=True, exist_ok=True)
             img.save(dest)
 
-    # Contact sheet: first 16x16 frame of each texture on a checkerboard.
+    # Contact sheet: first frame of animated item/block sprites. Static armor
+    # atlases retain their full 64x32 image, scaled to fit one cell without overlap.
     s = args.scale
     cols = 6
     cell = 16 * s + 8
@@ -103,13 +104,17 @@ def main():
     sheet = Image.new("RGBA", (cols * cell, rows * cell), (40, 40, 48, 255))
     for i, (rel, img) in enumerate(images):
         frame = img.crop((0, 0, img.width, min(img.height, img.width)))
-        big = frame.resize((frame.width * s, frame.height * s), Image.NEAREST)
-        bg = Image.new("RGBA", big.size)
-        for y in range(0, big.height, s * 2):
-            for x in range(0, big.width, s * 2):
+        thumbnail_size = 16 * s
+        fit = min(thumbnail_size / frame.width, thumbnail_size / frame.height)
+        big = frame.resize((max(1, round(frame.width * fit)),
+                            max(1, round(frame.height * fit))), Image.NEAREST)
+        bg = Image.new("RGBA", (thumbnail_size, thumbnail_size))
+        for y in range(0, thumbnail_size, s * 2):
+            for x in range(0, thumbnail_size, s * 2):
                 for dy, dx, c in ((0, 0, 70), (0, s, 90), (s, 0, 90), (s, s, 70)):
                     bg.paste((c, c, c, 255), (x + dx, y + dy, x + dx + s, y + dy + s))
-        bg.alpha_composite(big)
+        bg.alpha_composite(big, ((thumbnail_size - big.width) // 2,
+                                 (thumbnail_size - big.height) // 2))
         sheet.paste(bg, ((i % cols) * cell + 4, (i // cols) * cell + 4))
     out = ROOT / "build" / "px-preview" / "sheet.png"
     out.parent.mkdir(parents=True, exist_ok=True)
