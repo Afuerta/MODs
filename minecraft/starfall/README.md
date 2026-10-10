@@ -9,6 +9,8 @@ Fabric edition uses the same content IDs and text pixel art as the original NeoF
 ## Playing
 
 - Watch for the falling-star direction message, then follow its particle trail.
+- Craft a **Star Compass** from a compass and four Star Shards. It points to the nearest
+  remembered Fallen Star in your current dimension and updates as you travel.
 - Mine Starstone Ore and Fallen Stars for Star Shards, Stardust and a chance of a Wishing Star.
   Fallen Stars hurt players who stand on them without sneaking.
 - Turn shards and iron into Starsteel. The five Starsteel tools gain mining and attack bonuses
@@ -17,7 +19,7 @@ Fabric edition uses the same content IDs and text pixel art as the original NeoF
 - Turn crater stone into **11 building variants**: Starstone and Starstone Brick stairs, slabs
   and walls; Polished Starstone with stairs, slabs and walls; and Chiseled Starstone.
   Use a crafting table or stonecutter. Slabs yield two per stonecutting input.
-- Follow five advancements from your first shard through a full Starsteel arsenal and a
+- Follow six visible advancements from your first shard through a full Starsteel arsenal and a
   collection of celestial building materials.
 - Meteor showers increase the star rate for one night, with a configurable impact limit.
 
@@ -32,6 +34,7 @@ Use one edition of Starfall in a modpack; the original project in `../../starfal
 
 | Result | Ingredients |
 |---|---|
+| Star Compass | 4 Star Shards surrounding a Compass (plus shape) |
 | 2 Stardust | 1 Star Shard |
 | Starsteel Ingot | 1 Iron Ingot + 4 Star Shards |
 | Starsteel tools | Standard tool shapes using Starsteel Ingots and sticks |
@@ -42,6 +45,22 @@ Use one edition of Starfall in a modpack; the original project in `../../starfal
 | Chiseled Starstone | 2 Starstone Slabs stacked vertically |
 | Stairs / slabs / walls | Standard building shapes or a stonecutter |
 | Star Shard | Smelt or blast Starstone Ore |
+
+## Star Compass
+
+Successful impacts are remembered across server restarts, with at most **64 positions per
+dimension**. The oldest recorded impact is forgotten when the limit is reached. Mining or
+replacing a Fallen Star removes its record; the compass retargets within one second. Existing
+stars from before this update are not automatically indexed. The recipe unlocks when you obtain
+a Star Shard, including in worlds where the first-shard advancement was already completed.
+
+The compass points toward the nearest remembered star, including one in an unloaded chunk,
+without loading terrain. An unloaded target remains a remembered location until that area loads
+and can be checked. If no target exists in the current dimension, the needle spins and the
+tooltip says no star is remembered. Changing dimension clears the old dimension's target.
+Player-placed Fallen Stars do not create new impact records.
+
+[View the 32-direction compass artwork](docs/star-compass-frames.png).
 
 ## Commands
 
@@ -95,8 +114,8 @@ contact sheet, install Pillow and run `python3 tools/px_render.py`.
 
 ## Verified behavior
 
-The combined Fabric 1.21.1 headless server passed **all 12 Starfall GameTests** alongside the other
-mods (**45 required tests passed** in total). Starfall tests cover the 17-block/26-item registry,
+The combined Fabric 1.21.1 headless server passed **all 18 Starfall GameTests** alongside the other
+mods (**51 required tests passed** in total). Starfall tests cover the 17-block/27-item registry,
 recipe outputs, safe crater placement, constructed blocks/block entities/fluids/bedrock, unloaded
 terrain and the world border, compact persisted protection columns, two-pulse Stardust growth,
 wish consumption and cooldown, clear-night mining and actual melee bonuses, unamplified mod
@@ -104,6 +123,11 @@ attributed damage, Fallen Star loot/Silk Touch, bounded config, shower restricti
 limits, and construction placed during a meteor's flight. Tests live in `src/gametest` and are
 excluded from the released mod jar.
 
-The resource validator passes **171 JSON resources and 17 text textures**, including all 11
-building variants and five advancements. Texture previews were rendered and visually checked.
+The six Star Compass tests verify nearest selection, duplicate/cap eviction, save/reload through
+a fresh world state manager, malformed saved entries, missing and unloaded targets, scheduled
+inventory updates and dimension changes. The existing impact tests also verify that successful
+landings are recorded and rejected impacts leave the index unchanged.
+
+The resource validator passes **207 JSON resources and 49 text textures**, including all 11
+building variants, six visible advancements and a hidden recipe unlock. Texture previews were rendered and visually checked.
 Desktop/client playtesting has not been performed in this headless environment.

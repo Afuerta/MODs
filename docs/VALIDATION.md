@@ -27,3 +27,28 @@ The full server output is captured by CI as `minecraft/build/verification.log`, 
 These results cover the Fabric suite. The original NeoForge Starfall import had a separate successful GitHub Actions run before this integration and remains a separate build profile.
 
 Desktop rendering, animation feel, audio, controls, multiplayer latency and long survival pacing have not been human-playtested. The alpha is intended for an initial fresh-world playtest. Starfall cannot identify pre-installation constructions made entirely from natural dirt or stone; existing worlds can disable crater excavation with `craters.enabled = false`. See the play guide and module READMEs.
+
+## C02: Persistent Star Compass
+
+The Fabric Starfall update passed the complete `build combinedGameTest modpack` workflow
+on implementation commit `94a901bce41a89972be02780622ab7f4cb2b1997`
+([GitHub verification](https://github.com/Afuerta/MODs/actions/runs/38036442844),
+[PR #4](https://github.com/Afuerta/MODs/pull/4)).
+
+- Combined Minecraft server: **51 / 51 required tests passed**.
+- Standalone Starfall: **18 / 18 passed**, including six new compass tests.
+- Standalone Copperwake: **13 / 13 passed**; Riftbound: **12 / 12 passed**.
+- Pure domain checks: **10,696 passed** across the existing modules.
+- Current Starfall resource validation: **207 JSON files, 49 text textures**, including the
+  subsequent independent recipe-unlock advancement for players with existing first-shard progress.
+- The four-mod installable pack was produced, with test fixtures excluded from release jars.
+
+The compass tests exercise actual disk save/reload using a fresh `PersistentStateManager`,
+nearest-target ties, 64-entry retention, duplicate and malformed records, mined/replaced targets,
+unloaded terrain, scheduled inventory updates and changing dimension. Directional model
+thresholds and cardinal sprites were checked against the official Minecraft 1.21.1 assets.
+The recipe-unlock follow-up is covered by resource validation and the PR's final CI run.
+
+Builds ran on GitHub because this container rejects Loom's Unix-socket capability probe.
+No dependency or permission bypass was used. Desktop/client rendering and multiplayer latency
+still require human playtesting. Existing pre-update stars are intentionally not backfilled.

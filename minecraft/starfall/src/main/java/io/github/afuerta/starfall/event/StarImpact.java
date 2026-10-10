@@ -76,7 +76,11 @@ public final class StarImpact {
                 }
             }
         }
-        world.setBlockState(starPos, ModBlocks.FALLEN_STAR.getDefaultState(), Block.NOTIFY_ALL);
+        if (!world.setBlockState(starPos, ModBlocks.FALLEN_STAR.getDefaultState(), Block.NOTIFY_ALL)
+                || !world.getBlockState(starPos).isOf(ModBlocks.FALLEN_STAR)) return null;
+        StarImpactData data = StarImpactData.get(world);
+        data.pruneMissing(world);
+        data.record(starPos, world.getTime());
         DamageSource source = new DamageSource(world.getRegistryManager().get(RegistryKeys.DAMAGE_TYPE)
                 .entryOf(FALLING_STAR_DAMAGE), starPos.toCenterPos());
         for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, new Box(starPos).expand(radius + 1.5),

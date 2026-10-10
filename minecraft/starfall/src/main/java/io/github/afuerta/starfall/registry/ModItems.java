@@ -1,6 +1,7 @@
 package io.github.afuerta.starfall.registry;
 
 import io.github.afuerta.starfall.Starfall;
+import io.github.afuerta.starfall.item.StarCompassItem;
 import io.github.afuerta.starfall.item.StardustItem;
 import io.github.afuerta.starfall.item.WishingStarItem;
 import net.minecraft.item.AxeItem;
@@ -26,6 +27,8 @@ public final class ModItems {
     public static final Item STAR_SHARD = item("star_shard", new Item(new Item.Settings()));
     public static final Item STARDUST = item("stardust", new StardustItem(new Item.Settings()));
     public static final Item STARSTEEL_INGOT = item("starsteel_ingot", new Item(new Item.Settings()));
+    public static final StarCompassItem STAR_COMPASS = item("star_compass", new StarCompassItem(
+            new Item.Settings().maxCount(1).rarity(Rarity.UNCOMMON)));
     public static final Item WISHING_STAR = item("wishing_star", new WishingStarItem(
             new Item.Settings().maxCount(16).rarity(Rarity.RARE)));
     public static final SwordItem STARSTEEL_SWORD = item("starsteel_sword", new SwordItem(ModTiers.STARSTEEL,

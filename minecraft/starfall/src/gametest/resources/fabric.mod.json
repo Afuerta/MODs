@@ -6,7 +6,8 @@
   "environment": "*",
   "entrypoints": {
     "fabric-gametest": [
-      "io.github.afuerta.starfall.StarfallGameTests"
+      "io.github.afuerta.starfall.StarfallGameTests",
+      "io.github.afuerta.starfall.StarCompassGameTests"
     ]
   },
   "depends": {

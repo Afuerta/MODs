@@ -10,6 +10,8 @@ Collect Scrap and Memory Glass, then read `/copperwake contract`. A **Salvage Be
 
 On clear Overworld nights, watch for **Starfall** direction messages and star streaks. Mine the resulting star and crater materials with suitable tools. Turn star shards into **Stardust**, **Starsteel Ingots**, **Wishing Stars** and luminous building blocks. Starsteel tools receive their bonus when their holder is outside under a clear night sky. Stars can damage nearby entities; avoid the landing point.
 
+After your first impact, craft a **Star Compass** with four Star Shards around a Compass. It points to the nearest remembered Fallen Star in your current dimension, helping you find stars after their particle trail fades. Records survive server restarts, with up to 64 per dimension. The needle spins when no target is remembered. Unloaded targets remain remembered without loading their terrain; mining a star makes the compass seek another.
+
 Crater preflight protects block entities, constructed block types, border edges and unloaded terrain. It also records placement columns after installation. It cannot identify an older build made entirely from natural dirt or stone. For an existing world, set `craters.enabled` to `false` in `config/starfall.json` before exploring; stars then land without excavating craters.
 
 ## Rift trials

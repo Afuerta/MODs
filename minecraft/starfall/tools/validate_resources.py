@@ -108,6 +108,56 @@ def validate_pixel_art(path: pathlib.Path) -> tuple[int, int]:
     return (16, len(rows))
 
 
+def validate_star_compass(documents: dict[pathlib.Path, dict], language: dict) -> None:
+    """Check the complete needle sequence and its survival acquisition path."""
+    model = documents.get(ASSETS / "models/item/star_compass.json", {})
+    if model.get("textures", {}).get("layer0") != "starfall:item/star_compass_16":
+        fail("star compass: default texture must be frame 16")
+    # Verified against Mojang's 1.21.1 client model: 00 down, 08 left, 16 up, 24 right.
+    # Frame 16 spans zero; explicit frame models avoid the vanilla model's self-reference.
+    expected = [(0.0, 16)] + [((step + 0.5) / 32, (step + 17) % 32) for step in range(32)]
+    overrides = model.get("overrides", [])
+    if len(overrides) != len(expected) or any(
+        entry.get("predicate") != {"angle": angle}
+        or entry.get("model") != f"starfall:item/star_compass_{frame:02}"
+        for entry, (angle, frame) in zip(overrides, expected)
+    ):
+        fail("star compass: angle overrides must cover all 32 frames in vanilla order")
+    frames = set()
+    for frame in range(32):
+        name = f"star_compass_{frame:02}"
+        frame_model = documents.get(ASSETS / f"models/item/{name}.json", {})
+        if frame_model.get("textures", {}).get("layer0") != f"starfall:item/{name}":
+            fail(f"star compass: frame {frame:02} model must use its own texture")
+        if "overrides" in frame_model:
+            fail(f"star compass: frame {frame:02} must not recurse through overrides")
+        path = PIXEL_ART / f"item/{name}.px"
+        if path.is_file():
+            rows = path.read_text().partition("pixels:\n")[2].splitlines()
+            if len(rows) != 16:
+                fail(f"star compass: frame {frame:02} must be a single 16 x 16 image")
+            frames.add(tuple(rows))
+    if len(frames) != 32:
+        fail("star compass: must have 32 distinct text texture frames")
+    recipe = documents.get(DATA / "recipe/star_compass.json", {})
+    if (recipe.get("type") != "minecraft:crafting_shaped"
+            or recipe.get("pattern") != [" S ", "SCS", " S "]
+            or recipe.get("key") != {"S": {"item": "starfall:star_shard"},
+                                     "C": {"item": "minecraft:compass"}}
+            or recipe.get("result") != {"id": "starfall:star_compass", "count": 1}):
+        fail("star compass: recipe must consume one compass and four Star Shards")
+    unlock = documents.get(DATA / "advancement/recipes/star_compass.json", {})
+    unlocks = unlock.get("rewards", {}).get("recipes", [])
+    if "starfall:star_compass" not in unlocks:
+        fail("star compass: needs an independent recipe unlock for existing players")
+    if unlock.get("criteria", {}).get("has_star_shard", {}).get("trigger") != "minecraft:inventory_changed":
+        fail("star compass: obtaining shards must unlock the recipe")
+    for key in ("item.starfall.star_compass", "item.starfall.star_compass.tooltip",
+                "item.starfall.star_compass.unbound", "item.starfall.star_compass.target"):
+        if key not in language:
+            fail(f"star compass: missing language key {key}")
+
+
 def main() -> int:
     documents = {path: read_json(path) for path in sorted(RESOURCES.rglob("*.json"))}
     pixel_files = sorted(PIXEL_ART.rglob("*.px"))
@@ -124,6 +174,8 @@ def main() -> int:
     for path, document in documents.items():
         if "models" in path.parts:
             model_exists(document.get("parent", ""), path)
+            for override in document.get("overrides", []):
+                model_exists(override.get("model", ""), path)
             for texture in document.get("textures", {}).values():
                 if texture.startswith("starfall:"):
                     target = PIXEL_ART / (texture.split(":", 1)[1] + ".px")
@@ -173,6 +225,7 @@ def main() -> int:
                     item_exists(identifier, path)
 
     language = documents.get(ASSETS / "lang/en_us.json", {})
+    validate_star_compass(documents, language)
     pickaxe_tag = documents.get(RESOURCES / "data/minecraft/tags/block/mineable/pickaxe.json", {})
     for block in BUILDING_BLOCKS:
         for path in (ASSETS / "blockstates" / f"{block}.json",
