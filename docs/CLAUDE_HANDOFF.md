@@ -16,11 +16,25 @@ The Fabric suite uses Minecraft 1.21.1 and Java 21. `minecraft/README.md` lists 
 4. Play an ordinary Rift trial and an attuned Adept/Exalted trial in a party. Verify warnings, late entrants, withdrawal, death, cleanup and progress.
 5. Audit every contract requirement against obtainable survival items and prior progression. Rewards must not reproduce the full materials needed for their own repeating delivery.
 
-## First independent implementation
+## Completed follow-ups and next independent implementation
 
-Take **C02: Persistent Star Compass** from [the expansion queue](EXPANSION_TASKS.md). It can be implemented in the Fabric Starfall project without editing Copperwake or Riftbound. Preserve ordinary falling-star events and bounded safe impact preflight. Persist a bounded recent-impact record, use vanilla lodestone tracking for rendering, and handle mined/unloaded targets. Add tests for nearest target selection, cap eviction, stale targets and save/load behavior.
+**C02: Persistent Star Compass** is merged in [PR #4](https://github.com/Afuerta/MODs/pull/4).
+It remembers up to 64 impacts per dimension, retires mined targets, preserves unloaded targets
+without loading terrain, and includes save/reload tests and independent recipe discovery.
 
-After that, C03 armor, C05 landmarks, C11 recipe browsing, and C14 accessibility provide substantial parallel work. Astra's suggested next assignments are C07 encounters, C08 party expeditions and C09 constellation charting.
+**C03: Starsteel armor** is implemented in [PR #5](https://github.com/Afuerta/MODs/pull/5).
+It adds four pieces, original item and humanoid textures, recipes, repair/enchantment/trim support,
+and a clear-night full-set bonus. The full pack build passed 59 combined GameTests and 26 standalone Starfall tests.
+Check the PR's current merge status before overlapping work.
+
+Take **C04: Astral infusion station** from [the expansion queue](EXPANSION_TASKS.md) next.
+Implement it in the Fabric suite and preserve the separate original NeoForge project. Ship four
+authored recipes connecting all three content mods, with atomic ingredient consumption and output.
+Specify hopper insertion/extraction rules, pause outside clear-night conditions, persist progress
+across save/load, and test partial inputs, output overflow and multiplayer use.
+
+C05 landmarks, C11 recipe browsing, and C14 accessibility remain substantial parallel tasks.
+Astra's suggested assignments are C07 encounters, C08 party expeditions and C09 constellation charting.
 
 ## Evidence to provide
 

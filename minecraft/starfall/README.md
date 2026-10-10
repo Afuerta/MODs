@@ -145,8 +145,8 @@ contact sheet, install Pillow and run `python3 tools/px_render.py`.
 
 ## Verified behavior
 
-The combined Fabric 1.21.1 headless server passed **all 18 Starfall GameTests** alongside the other
-mods (**51 required tests passed** in total). Starfall tests cover the 17-block/27-item registry,
+The combined Fabric 1.21.1 headless server passed **all 26 Starfall GameTests** alongside the other
+mods (**59 required tests passed** in total). Starfall tests cover the 17-block/31-item registry,
 recipe outputs, safe crater placement, constructed blocks/block entities/fluids/bedrock, unloaded
 terrain and the world border, compact persisted protection columns, two-pulse Stardust growth,
 wish consumption and cooldown, clear-night mining and actual melee bonuses, unamplified mod
@@ -159,6 +159,11 @@ a fresh world state manager, malformed saved entries, missing and unloaded targe
 inventory updates and dimension changes. The existing impact tests also verify that successful
 landings are recorded and rejected impacts leave the index unchanged.
 
-The resource validator passes **207 JSON resources and 49 text textures**, including all 11
-building variants, six visible advancements and a hidden recipe unlock. Texture previews were rendered and visually checked.
+Eight Starsteel armor tests cover real shaped crafting and costs, material stats, repair and
+enchantment tags, exact equipment slots, night boundaries, weather/roof/dimension exclusions,
+longer/stronger/infinite potions, actual fall and ordinary damage, registered server tick events,
+and the natural expiry of Night Vision after equipment removal.
+
+The resource validator passes **272 JSON resources and 55 text textures**, including all 11
+building variants, seven visible advancements and five hidden recipe unlocks. Texture previews were rendered and visually checked.
 Desktop/client playtesting has not been performed in this headless environment.

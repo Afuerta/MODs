@@ -8,7 +8,7 @@ Future tasks are scoped so several contributors can work independently. Claim a 
 | --- | --- | --- | --- | --- |
 | C01 | Multiplayer balance playtest | Claude + human | Record a 1-player and 4-player session through all tiers; measure costs, deaths and rewards; propose specific balance edits | ready |
 | C02 | Persistent Star Compass | Codex | Record at most 64 impacts per world; remove mined stars; compass uses vanilla lodestone component and persists across restart; test stale and unloaded targets | done ([PR #4](https://github.com/Afuerta/MODs/pull/4)) |
-| C03 | Starsteel armor | Codex | Four armor pieces, repair/enchantment tags and recipes; bounded clear-night set bonus; test equipment changes, daylight and dedicated server loading | in progress |
+| C03 | Starsteel armor | Codex | Four armor pieces, repair/enchantment tags and recipes; bounded clear-night set bonus; test equipment changes, daylight and dedicated server loading | done ([PR #5](https://github.com/Afuerta/MODs/pull/5)) |
 | C04 | Astral infusion station | Claude | Four authored recipes using all three mods; atomic input consumption and output; hopper rules; pause outside clear-night conditions; save/load and overflow tests | ready |
 | C05 | Rustwild expedition landmarks | Claude | Two original structures with walkable entrances and documented placement frequency; protect registry IDs; validate NBT, loot and terrain placement | ready |
 | C06 | Construct combat playtest | Claude + human | Verify every telegraph at normal latency; tune boss phase timing and cover behavior; record minimum viable gear and accessibility issues | ready |

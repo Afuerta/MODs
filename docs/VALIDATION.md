@@ -52,3 +52,32 @@ The recipe-unlock follow-up is covered by resource validation and the PR's final
 Builds ran on GitHub because this container rejects Loom's Unix-socket capability probe.
 No dependency or permission bypass was used. Desktop/client rendering and multiplayer latency
 still require human playtesting. Existing pre-update stars are intentionally not backfilled.
+
+## C03: Starsteel armor and pack 0.2.1
+
+The complete `build combinedGameTest modpack` workflow passed on implementation commit
+`f6671acf9e65a43dc87cb9fca792014babaea068`
+([GitHub verification](https://github.com/Afuerta/MODs/actions/runs/38065930989),
+[PR #5](https://github.com/Afuerta/MODs/pull/5)).
+
+- Combined Minecraft server: **59 / 59 required tests passed**.
+- Standalone Starfall: **26 / 26 passed**, including eight new armor tests.
+- Standalone Copperwake: **13 / 13 passed**; Riftbound: **12 / 12 passed**.
+- Pure domain checks: **10,696 passed**.
+- Starfall resource validation: **272 JSON resources, 55 text textures**, 11 building variants,
+  seven visible advancements and five independent hidden recipe unlocks.
+- `convergence-0.2.1-fabric-1.21.1.zip` was built with Starfall 0.2.1 and the other three
+  unchanged mod versions. The manifest records exact versions and SHA-256 checksums.
+
+The new engine tests exercise conventional armor recipes, missing/wrong inputs, durability and
+repair materials, enchantment tags, every equipment slot, mixed/held armor, night boundaries,
+rain/cover/Nether exclusions, potion duration/amplifier preservation, real fall and stalagmite
+damage, ordinary damage controls, registered server tick scheduling, and natural effect expiry
+within 260 ticks after removing a piece. Join invulnerability is allowed to expire before
+damage assertions.
+
+Four original 16-pixel inventory sprites and two 64-by-32 humanoid layers were rendered and
+visually inspected as texture/UV previews. All ten vanilla trim model variants are present,
+and vanilla's global `trim_type` predicate was verified against the 1.21.1 client.
+These checks are not a desktop rendering or multiplayer latency playtest. Local Loom remains
+blocked by the environment's Unix-socket restriction; no dependency or permission bypass was used.
