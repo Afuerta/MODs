@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "starfall:starstone",
+    "starfall:starstone_bricks",
+    "starfall:starstone_ore",
+    "starfall:fallen_star",
+    "starfall:starsteel_block",
+    "starfall:star_lantern"
+  ]
+}

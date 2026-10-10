@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "copperwake:relay_tower",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 29014732,
+    "spacing": 30,
+    "separation": 12,
+    "spread_type": "linear"
+  }
+}

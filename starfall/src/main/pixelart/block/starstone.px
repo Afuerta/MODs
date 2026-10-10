@@ -1,0 +1,27 @@
+// Starstone: dark indigo stone flecked with starlight.
+palette:
+a #272043
+b #1E1933
+c #2F2752
+d #E8E3FF
+e #8C7FE0
+f #38305F
+g #B9AEFF
+h #433A6E
+pixels:
+aabaccbbccccaaca
+cccaccbadaaabbaa
+bbbacaccabcccccc
+bbebacfcabgcffff
+fedeccccaaaaaacc
+cfeahfcccabbaaff
+fcccacaaaabccfca
+cfcaaaaabdcaccaa
+fcaccffcaaccacch
+acaccfccabcaaccf
+hfbacccfbbccaafc
+ffaaaccfacfaaafc
+cfbacfffagcafhfh
+ffccccccaccaffcf
+aacfffcfcfaaacfc
+bacfaahfcfacacaf

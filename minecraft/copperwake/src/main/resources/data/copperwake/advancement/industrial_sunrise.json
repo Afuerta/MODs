@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "copperwake:lumen_glass"
+    },
+    "title": {
+      "translate": "advancement.copperwake.industrial_sunrise.title"
+    },
+    "description": {
+      "translate": "advancement.copperwake.industrial_sunrise.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "acquire": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "copperwake:lumen_glass"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "experience": 20
+  },
+  "parent": "copperwake:old_light"
+}

@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "copperwake:salvage_yard",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 19014731,
+    "spacing": 24,
+    "separation": 10,
+    "spread_type": "linear"
+  }
+}

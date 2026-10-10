@@ -1,0 +1,86 @@
+name: Build Starfall
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+        working-directory: starfall
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Pick Gradle (wrapper if present)
+        run: |
+          if [ -f gradlew ] && [ -f gradle/wrapper/gradle-wrapper.jar ]; then
+            chmod +x gradlew
+            echo "GRADLE=./gradlew" >> "$GITHUB_ENV"
+          else
+            echo "GRADLE=gradle" >> "$GITHUB_ENV"
+          fi
+
+      - name: Compile and package
+        run: $GRADLE build --stacktrace 2>&1 | tee ../build.log
+
+      - name: Run GameTests
+        run: $GRADLE runGameTestServer --stacktrace 2>&1 | tee ../gametest.log
+
+      - name: Upload mod jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: starfall-mod-jar
+          path: starfall/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Post failure details on the pull request
+        if: failure() && github.event_name == 'pull_request'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          LOG=build.log
+          if [ -s gametest.log ]; then LOG=gametest.log; fi
+          {
+            echo "### Starfall CI failed (\`$LOG\`)"
+            echo
+            echo "Key lines:"
+            echo '```'
+            grep -E "error:|FAILED|Exception|Caused by|failed|Failed" "$LOG" | head -n 60 || true
+            echo '```'
+            echo
+            echo "<details><summary>Last 150 lines</summary>"
+            echo
+            echo '```'
+            tail -n 150 "$LOG" || true
+            echo '```'
+            echo "</details>"
+            echo
+            echo "Full log: $RUN_URL"
+          } > ci-comment.md
+          gh pr comment "$PR_NUMBER" --body-file ci-comment.md

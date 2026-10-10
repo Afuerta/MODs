@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    "GMG",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "M": {
+      "item": "copperwake:memory_glass"
+    }
+  },
+  "result": {
+    "id": "copperwake:lumen_glass",
+    "count": 4
+  }
+}

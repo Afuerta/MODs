@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CSC",
+    "SCS",
+    "CSC"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "S": {
+      "item": "copperwake:scrap"
+    }
+  },
+  "result": {
+    "id": "copperwake:riveted_copper",
+    "count": 4
+  }
+}

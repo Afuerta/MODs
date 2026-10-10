@@ -1,0 +1,36 @@
+name: Copperwake build
+
+on:
+  push:
+    paths: ['minecraft/copperwake/**', '.github/workflows/copperwake-ci.yml']
+  pull_request:
+    paths: ['minecraft/copperwake/**', '.github/workflows/copperwake-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: minecraft/copperwake
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate resources
+        run: python tools/validate_resources.py
+      - name: Build and run domain and server tests
+        run: bash gradlew build --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: copperwake-fabric-1.21.1
+          path: minecraft/copperwake/build/libs/*.jar

@@ -1,0 +1,27 @@
+// Block of Starsteel.
+palette:
+a #C4E2FF
+b #8FB8E8
+c #3A4A86
+d #5A79B8
+e #C98B1E
+f #FFC94A
+g #FFE79A
+h #FFF8DD
+pixels:
+aaaaaaaaaaaaaaaa
+abbbbbbbbbbbbbbc
+abbbbbbabbbbbbdc
+abbddddddddddbdc
+abbdbabbbbbbabdc
+abbdabbbebbbaadc
+abbdbbbbfbbbabdc
+abadbbbgfgbaaddc
+abbdbeffhffeaddc
+abbdbbbgfgbdaddc
+abbdbbbbfbddabdc
+abbdbbbaeddbaddc
+abbdaaaaaaaaaddc
+abbbbabbdddddbdc
+abdddddddddddddc
+accccccccccccccc

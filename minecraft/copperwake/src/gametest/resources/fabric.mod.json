@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "copperwake_test",
+  "version": "1.0.0",
+  "name": "Copperwake engine integration tests",
+  "environment": "server",
+  "entrypoints": {
+    "main": ["com.afuerta.copperwake.CopperwakeRuntimeSmoke"],
+    "fabric-gametest": ["com.afuerta.copperwake.CopperwakeGameTests"]
+  },
+  "depends": {
+    "copperwake": "*",
+    "fabric-gametest-api-v1": "*"
+  }
+}

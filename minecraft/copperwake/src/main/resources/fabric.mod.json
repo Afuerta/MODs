@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "copperwake",
+  "version": "${version}",
+  "name": "Copperwake: Salvagers of the Rustwild",
+  "description": "Explore a forgotten machine realm, recover salvage, fulfill guild contracts, and awaken the Foundry Foreman.",
+  "authors": ["Afuerta"],
+  "contact": {"sources": "https://github.com/Afuerta/MODs"},
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.afuerta.copperwake.CopperwakeMod"],
+    "client": ["com.afuerta.copperwake.client.CopperwakeClient"]
+  },
+  "depends": {"fabricloader": ">=0.16.14", "minecraft": "~1.21.1", "java": ">=21", "fabric-api": "*"}
+}
