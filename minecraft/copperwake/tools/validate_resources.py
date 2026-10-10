@@ -25,6 +25,7 @@ ITEMS = {
 }
 BLOCKS = {"salvage_bench", "riveted_copper", "lumen_glass"}
 ENTITIES = {"rust_mite", "coil_sentry", "foundry_foreman"}
+STRUCTURES = {"salvage_yard", "relay_tower", "foundry", "siphon_gardens", "switchyard_depot"}
 ERRORS: list[str] = []
 
 
@@ -181,9 +182,18 @@ def main() -> int:
                     resource_ref(element.get("location", ""), "structure", path, ".nbt")
         if "/worldgen/structure/" in relative:
             resource_ref(doc.get("start_pool", ""), "worldgen/template_pool", path)
+            biomes = doc.get("biomes", "")
+            if isinstance(biomes, str) and biomes.startswith("#copperwake:"):
+                resource_ref(biomes[1:], "tags/worldgen/biome", path)
+            check(doc.get("terrain_adaptation") == "beard_thin", path, "landmarks must retain surface terrain anchoring")
+            check(doc.get("project_start_to_heightmap") == "WORLD_SURFACE_WG", path, "landmarks must project to the natural surface")
+            check(doc.get("size") == 1, path, "1.21.1 jigsaw starts need positive size to register their first piece")
         if "/worldgen/structure_set/" in relative:
             for entry in doc.get("structures", []):
                 resource_ref(entry.get("structure", ""), "worldgen/structure", path)
+            placement = doc.get("placement", {})
+            check(placement.get("type") == "minecraft:random_spread", path, "unbounded or unsupported placement")
+            check(0 < placement.get("separation", 0) < placement.get("spacing", 0) <= 64, path, "invalid landmark spacing/separation")
         if "/worldgen/placed_feature/" in relative:
             resource_ref(doc.get("feature", ""), "worldgen/configured_feature", path)
         if "/worldgen/biome/" in relative:
@@ -195,6 +205,29 @@ def main() -> int:
     check(bool(key_recipe), RES / "data/copperwake/recipe/survey_key.json", "missing independent dimension-access recipe")
     for obj in walk(key_recipe.get("key", {})):
         check(not str(obj.get("item", "")).startswith(NS), RES / "data/copperwake/recipe/survey_key.json", "dimension access must not require loot from inside the dimension")
+    salts = []
+    for name in sorted(STRUCTURES):
+        for category in ("worldgen/structure", "worldgen/structure_set", "worldgen/template_pool", "tags/worldgen/biome/has_structure"):
+            path = RES / f"data/copperwake/{category}/{name}.json"
+            check(path in documents, path, "missing landmark generation definition")
+        path = RES / f"data/copperwake/worldgen/structure_set/{name}.json"
+        salts.append(documents.get(path, {}).get("placement", {}).get("salt"))
+        tag = RES / f"data/copperwake/tags/worldgen/biome/has_structure/{name}.json"
+        values = documents.get(tag, {}).get("values", [])
+        check(bool(values) and set(values) <= {NS + biome for biome in ("oxide_flats", "verdigris_woods", "cinder_works")}, tag, "landmarks must stay in Rustwild land biomes")
+    check(None not in salts and len(salts) == len(set(salts)), RES / "data/copperwake/worldgen/structure_set", "landmark placement salts must be distinct")
+    for name in ("siphon_gardens", "switchyard_depot"):
+        path = RES / f"data/copperwake/loot_table/chests/{name}.json"
+        doc = documents.get(path, {})
+        names = [obj.get("name") for obj in walk(doc) if obj.get("type") == "minecraft:item"]
+        check(NS + "memory_glass" in names, path, "expedition loot must replenish exploration-only Memory Glass")
+        check(all(item.startswith(("minecraft:", NS)) and item not in {NS + "foreman_heart", NS + "foreman_seal"} for item in names), path, "landmark loot must not grant boss/trial-gated rewards")
+        check(all(pool.get("rolls") == 1 for pool in doc.get("pools", [])), path, "expedition caches must have fixed bounded rolls")
+    try:
+        from generate_structures import validate_committed
+        validate_committed()
+    except (AssertionError, ValueError, OSError) as exc:
+        ERRORS.append(f"structure validation: {exc}")
     if ERRORS:
         print("Resource validation FAILED:", file=sys.stderr)
         print("\n".join(f"- {error}" for error in ERRORS), file=sys.stderr)

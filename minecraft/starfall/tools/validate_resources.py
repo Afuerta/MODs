@@ -20,6 +20,7 @@ BUILDING_BLOCKS = {
     "polished_starstone", "polished_starstone_stairs", "polished_starstone_slab",
     "polished_starstone_wall", "chiseled_starstone",
 }
+EXPEDITION_ITEMS = {"star_compass", "starsteel_helmet", "starsteel_chestplate", "starsteel_leggings", "starsteel_boots"}
 ERRORS: list[str] = []
 
 
@@ -94,18 +95,20 @@ def validate_pixel_art(path: pathlib.Path) -> tuple[int, int]:
                 rows.append(line)
             else:
                 raise ValueError(f"line {line_number}: expected palette or pixels header")
-        if not rows or len(rows[0]) != 16 or len(rows) % 16:
-            raise ValueError("textures must be 16 pixels wide and whole 16-pixel frames tall")
+        armor_layer = path.parent == PIXEL_ART / "models/armor"
+        expected_width = 64 if armor_layer else 16
+        if not rows or len(rows[0]) != expected_width or (len(rows) != 32 if armor_layer else len(rows) % 16):
+            raise ValueError("armor layers must be 64x32; other textures use whole 16x16 frames")
         for index, row in enumerate(rows, 1):
-            if len(row) != 16 or set(row) - palette:
+            if len(row) != expected_width or set(row) - palette:
                 raise ValueError(f"pixel row {index}: width or undefined colour")
-        if len(rows) > 16:
+        if len(rows) > 16 and not armor_layer:
             metadata = ASSETS / "textures" / path.relative_to(PIXEL_ART).with_suffix(".png.mcmeta")
             if not metadata.is_file():
                 raise ValueError("animated texture has no .png.mcmeta")
     except (ValueError, OSError) as exc:
         fail(f"{path.relative_to(ROOT)}: {exc}")
-    return (16, len(rows))
+    return (len(rows[0]) if rows else 0, len(rows))
 
 
 def main() -> int:
@@ -166,11 +169,18 @@ def main() -> int:
             for group in document.get("requirements", []):
                 if not group or any(key not in criteria for key in group):
                     fail(f"{path.relative_to(ROOT)}: advancement has unknown requirements")
+            for recipe in document.get("rewards", {}).get("recipes", []):
+                if recipe.startswith("starfall:") and not (DATA / "recipe" / (recipe.split(":", 1)[1] + ".json")).is_file():
+                    fail(f"{path.relative_to(ROOT)}: missing unlocked recipe {recipe}")
         if "tags" in path.parts:
             for value in document.get("values", []):
                 identifier = value if isinstance(value, str) else value.get("id", "")
                 if identifier.startswith("starfall:"):
                     item_exists(identifier, path)
+                if identifier.startswith("#starfall:"):
+                    tag_type = "block" if "block" in path.parts else "item"
+                    if not (DATA / f"tags/{tag_type}" / (identifier.split(":", 1)[1] + ".json")).is_file():
+                        fail(f"{path.relative_to(ROOT)}: missing local tag {identifier}")
 
     language = documents.get(ASSETS / "lang/en_us.json", {})
     pickaxe_tag = documents.get(RESOURCES / "data/minecraft/tags/block/mineable/pickaxe.json", {})
@@ -185,6 +195,30 @@ def main() -> int:
             fail(f"building block {block}: missing English name")
         if f"starfall:{block}" not in pickaxe_tag.get("values", []):
             fail(f"building block {block}: missing pickaxe mining tag")
+    for item in EXPEDITION_ITEMS:
+        for path in (ASSETS / "models/item" / f"{item}.json", DATA / "recipe" / f"{item}.json",
+                     DATA / "advancement/recipes/equipment" / f"{item}.json"):
+            if path not in documents:
+                fail(f"expedition item {item}: missing {path.relative_to(ROOT)}")
+        if f"item.starfall.{item}" not in language:
+            fail(f"expedition item {item}: missing English name")
+    for key in ("tooltip.starfall.star_compass", "tooltip.starfall.star_compass_memory",
+                "message.starfall.compass_empty", "message.starfall.compass_target", "message.starfall.compass_memory",
+                "tooltip.starfall.starsteel_armor", "tooltip.starfall.starsteel_armor_conditions"):
+        if key not in language:
+            fail(f"expedition feedback: missing language key {key}")
+    compass = documents.get(ASSETS / "models/item/star_compass.json", {})
+    overrides = compass.get("overrides", [])
+    if [entry.get("predicate", {}).get("angle") for entry in overrides] != [index / 32 for index in range(32)]:
+        fail("Star Compass requires 32 ordered vanilla angle frames")
+    for layer in (1, 2):
+        path = PIXEL_ART / f"models/armor/starsteel_layer_{layer}.px"
+        if path not in pixel_files:
+            fail(f"Starsteel armor is missing 64x32 layer {layer}")
+    for armor_type, piece in (("head", "helmet"), ("chest", "chestplate"), ("leg", "leggings"), ("foot", "boots")):
+        path = RESOURCES / f"data/minecraft/tags/item/{armor_type}_armor.json"
+        if f"starfall:starsteel_{piece}" not in documents.get(path, {}).get("values", []):
+            fail(f"Starsteel {piece} is missing its vanilla armor/enchantment slot tag")
     for path, document in documents.items():
         if "advancement" in path.parts:
             display = document.get("display", {})

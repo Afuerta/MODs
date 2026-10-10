@@ -27,6 +27,7 @@ public final class TrialSession {
     private final Set<UUID> participants;
     private final Set<UUID> eligible;
     private final Set<UUID> activeMobs = new HashSet<>();
+    private final Set<UUID> pendingMobs = new HashSet<>();
     private final Set<UUID> seenMobs = new HashSet<>();
     private final long deadlineTick;
     private long phaseDeadlineTick;
@@ -69,7 +70,7 @@ public final class TrialSession {
             state = State.SPAWNING;
             return Event.SPAWN_WAVE;
         }
-        if (state == State.ACTIVE && activeMobs.isEmpty()) {
+        if (state == State.ACTIVE && activeMobs.isEmpty() && pendingMobs.isEmpty()) {
             if (waveIndex == plan.waves().size() - 1) {
                 state = State.SUCCEEDED;
                 return terminalEvent();
@@ -86,22 +87,42 @@ public final class TrialSession {
         return plan.waves().get(waveIndex);
     }
 
-    /**
-     * Register only after every entity has spawned successfully. On partial spawn, clean up
-     * those entities and fail(SPAWN_FAILED); never register a smaller wave as complete.
-     */
+    /** Register a complete, successfully spawned ordinary wave. */
     public void registerWaveMobs(Collection<UUID> mobIds) {
+        registerWaveMobs(mobIds, Set.of());
+    }
+
+    /**
+     * Reserve the entire planned wave atomically: deployed entities are live, prepared
+     * reinforcements remain pending. Pending IDs cannot be killed, converted or clear a
+     * wave. The adapter must abort and clean up if any later deployment fails.
+     */
+    public void registerWaveMobs(Collection<UUID> deployed, Collection<UUID> pending) {
         WavePlan wave = nextWave();
-        Objects.requireNonNull(mobIds, "mobIds");
+        Objects.requireNonNull(deployed, "deployed");
+        Objects.requireNonNull(pending, "pending");
         Set<UUID> unique = new HashSet<>();
-        for (UUID id : mobIds) unique.add(Objects.requireNonNull(id, "mob id"));
-        if (unique.size() != mobIds.size() || unique.size() != wave.mobCount()) {
+        for (UUID id : deployed) unique.add(Objects.requireNonNull(id, "mob id"));
+        for (UUID id : pending) unique.add(Objects.requireNonNull(id, "pending id"));
+        if (unique.size() != deployed.size() + pending.size() || unique.size() != wave.mobCount()) {
             throw new IllegalArgumentException("Mob IDs must be unique and match the planned wave size");
+        }
+        if (deployed.size() != wave.pattern().initialCount(wave.mobCount())) {
+            throw new IllegalArgumentException("Pending mobs must match the reinforcement deployment");
         }
         if (!Collections.disjoint(unique, seenMobs)) throw new IllegalArgumentException("Mob ID reused across waves");
         seenMobs.addAll(unique);
-        activeMobs.addAll(unique);
+        activeMobs.addAll(deployed);
+        pendingMobs.addAll(pending);
         state = State.ACTIVE;
+    }
+
+    /** A reserved reinforcement counts as live only after successful world spawning. */
+    public boolean deployMob(UUID mobId) {
+        Objects.requireNonNull(mobId, "mobId");
+        if (state != State.ACTIVE || !pendingMobs.remove(mobId)) return false;
+        activeMobs.add(mobId);
+        return true;
     }
 
     /** Only registered, live trial enemies count; duplicate or unrelated deaths do nothing. */
@@ -164,6 +185,8 @@ public final class TrialSession {
     public Set<UUID> participants() { return participants; }
     public Set<UUID> eligibleParticipants() { return Set.copyOf(eligible); }
     public Set<UUID> activeMobs() { return Set.copyOf(activeMobs); }
+    public Set<UUID> pendingMobs() { return Set.copyOf(pendingMobs); }
+    public int remainingMobs() { return activeMobs.size() + pendingMobs.size(); }
     public int waveIndex() { return waveIndex; }
     public long deadlineTick() { return deadlineTick; }
     public long remainingTicks(long nowTick) {

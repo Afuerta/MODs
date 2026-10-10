@@ -1,5 +1,41 @@
 # Copperwake validation
 
+## Version 0.3.0-alpha.1 expedition expansion
+
+- Resource validation passed **116 production JSON resources**, **16 modeled
+  items**, **13 recipes** and **14 progression advancements**. The new resources
+  are two bounded chest loot tables and eight Rustwild-only generation files.
+- Both new NBT templates pass complete binary round-trip, exact deterministic
+  gzip comparison with authored source, coordinate checks, clear barrel lids,
+  and entrance-to-cache/guard route validation. The three original NBT files
+  regenerate without byte changes.
+- Standalone Fabric build passed against the pinned 1.21.1 mappings, including
+  production/common/client and GameTest source compilation. **All 17 headless
+  Minecraft GameTests passed**, retaining the original 13 checks. Four new
+  engine checks cover placed templates and persistent guard counts, dry entrances,
+  backed ladders and landings, contained cisterns, actual one-time barrel loot,
+  empty reopening/replacement, 128 seeded loot outcomes, and production Rustwild
+  noise-generator jigsaw starts for all five landmarks with surface anchoring and
+  biome rejection. All five structures create exactly one piece at each of three
+  sampled coordinates; their ground level matches the production noise terrain.
+  The unchanged domain harness also passed **639 checks**. The complete pack's
+  combined verification is recorded in the root release validation.
+- The first actual-start check exposed the old zero-depth jigsaw problem:
+  Minecraft 1.21.1 omits the start piece when `size` is zero. All five definitions
+  now use positive depth one with no connectors. Tests require one actual child
+  for every landmark, instead of treating template placement as natural-generation
+  verification. Original IDs, templates, biomes, salts and grid spacing are kept.
+- The deterministic guild domain/catalog and both devices retain their existing
+  definitions and rank thresholds. No loot grants a guild completion, Foreman
+  Heart/Seal or another mod's gated material.
+- `docs/expedition-landmarks.png` was generated from committed NBT and inspected
+  as a geometry illustration. It does not verify Minecraft textures, client
+  rendering, combat feel or natural terrain joins.
+
+Several real seeds, steep terrain and human survival traversal remain necessary
+playtests. Headless template/start tests establish the authored layout and height
+projection; they do not establish that every terrain intersection is polished.
+
 ## Version 0.2.0-alpha.1 expansion checks
 
 - Main/common/client source and GameTest source compilation passed against the

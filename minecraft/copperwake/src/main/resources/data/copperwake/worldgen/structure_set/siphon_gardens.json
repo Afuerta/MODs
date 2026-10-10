@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "copperwake:siphon_gardens",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 39014747,
+    "spacing": 34,
+    "separation": 14,
+    "spread_type": "linear"
+  }
+}

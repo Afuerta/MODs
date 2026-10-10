@@ -48,6 +48,7 @@ public final class SalvageGuild {
         say(player, "Death and inventory drops follow normal Minecraft rules. Prepare food, armor and torches before your first expedition.", Formatting.DARK_GRAY);
         player.sendMessage(Text.translatable("journal.copperwake.field_devices").formatted(Formatting.AQUA), false);
         player.sendMessage(Text.translatable("journal.copperwake.expanded_contracts").formatted(Formatting.GRAY), false);
+        player.sendMessage(Text.translatable("journal.copperwake.expedition_landmarks").formatted(Formatting.AQUA), false);
     }
 
     static void status(ServerPlayerEntity player) {

@@ -1,0 +1,26 @@
+// Original Starfall expedition art.
+palette:
+a #1A1838
+b #EEF8FF
+c #C4E2FF
+d #5A79B8
+e #FFE79A
+f #3A4A86
+g #8FB8E8
+pixels:
+................
+.....aaaaaa.....
+....aaggggaa....
+...aggbcbbgga...
+..agbffgfffbga..
+.aagfffgffffgaa.
+.agbffffgfffbga.
+.agbfffbgfffcga.
+.agcfffebfffbga.
+.agbffffefffbga.
+.aagffffefffgaa.
+..agbfffeffbga..
+...aggbbcbgga...
+....aaggggaa....
+.....aaaaaa.....
+................

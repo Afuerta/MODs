@@ -77,6 +77,7 @@ public final class StarImpact {
             }
         }
         world.setBlockState(starPos, ModBlocks.FALLEN_STAR.getDefaultState(), Block.NOTIFY_ALL);
+        StarChart.get(world).record(starPos);
         DamageSource source = new DamageSource(world.getRegistryManager().get(RegistryKeys.DAMAGE_TYPE)
                 .entryOf(FALLING_STAR_DAMAGE), starPos.toCenterPos());
         for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, new Box(starPos).expand(radius + 1.5),

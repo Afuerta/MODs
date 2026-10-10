@@ -60,6 +60,7 @@ tasks.register('generatePackManifest') {
     packProjects.each { name ->
         inputs.files(project(":${name}").tasks.named('remapJar').flatMap { it.archiveFile })
         inputs.files(project(":${name}").sourceSets.findByName('gametest')?.allJava ?: [])
+        inputs.files(project(":${name}").sourceSets.findByName('gametest')?.resources ?: [])
     }
     doLast {
         def output = metadataDirectory.get().asFile
@@ -72,6 +73,11 @@ tasks.register('generatePackManifest') {
                 def packagePath = packageMatch.find() ? packageMatch.group(1).replace('.', '/') + '/' : ''
                 packagePath + source.name.replaceFirst(/\.java$/, '')
             } ?: []
+            def testResources = modProject.sourceSets.findByName('gametest')?.resources
+            def testResourcePaths = testResources?.files?.collect { resource ->
+                def root = testResources.srcDirs.find { resource.toPath().startsWith(it.toPath()) }
+                root == null ? null : root.toPath().relativize(resource.toPath()).toString().replace('\\', '/')
+            }?.findAll { it != null && it != 'fabric.mod.json' } ?: []
             def metadata
             new ZipFile(modJar).withCloseable { archive ->
                 def descriptor = archive.getEntry('fabric.mod.json')
@@ -81,6 +87,7 @@ tasks.register('generatePackManifest') {
                 if (metadata.entrypoints?.containsKey('fabric-gametest') ||
                         archive.entries().toList().any {
                             it.name.contains('/gametest/') || it.name.contains('_test/') ||
+                                    testResourcePaths.contains(it.name) ||
                                     testClassPrefixes.any { prefix ->
                                         it.name == prefix + '.class' || it.name.startsWith(prefix + '$')
                                     }

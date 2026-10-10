@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "active=false": {
+      "model": "convergence:block/astral_infuser"
+    },
+    "active=true": {
+      "model": "convergence:block/astral_infuser_active"
+    }
+  }
+}

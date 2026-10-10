@@ -2,6 +2,7 @@ package io.github.afuerta.starfall;
 
 import io.github.afuerta.starfall.event.FallingStarManager;
 import io.github.afuerta.starfall.event.ProtectedTerrain;
+import io.github.afuerta.starfall.event.StarlitArmor;
 import io.github.afuerta.starfall.registry.ModBlocks;
 import io.github.afuerta.starfall.registry.ModItems;
 import net.fabricmc.api.ModInitializer;
@@ -36,6 +37,7 @@ public final class Starfall implements ModInitializer {
                 .icon(() -> new ItemStack(ModItems.STAR_SHARD))
                 .entries((context, entries) -> ModItems.ALL.forEach(entries::add)).build());
         ServerTickEvents.END_WORLD_TICK.register(FallingStarManager::tick);
+        ServerTickEvents.END_WORLD_TICK.register(StarlitArmor::tick);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> FallingStarManager.clear());
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, environment) ->
                 io.github.afuerta.starfall.command.StarfallCommands.register(dispatcher));

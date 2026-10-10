@@ -73,5 +73,21 @@
   "advancement.starfall.starlit_arsenal.title": "Starlit Arsenal",
   "advancement.starfall.starlit_arsenal.description": "Collect all five Starsteel tools.",
   "advancement.starfall.heavenly_architect.title": "Heavenly Architect",
-  "advancement.starfall.heavenly_architect.description": "Collect Starstone stairs, a slab, a wall, polished stone and chiseled stone."
+  "advancement.starfall.heavenly_architect.description": "Collect Starstone stairs, a slab, a wall, polished stone and chiseled stone.",
+  "item.starfall.star_compass": "Star Compass",
+  "item.starfall.starsteel_helmet": "Starsteel Helmet",
+  "item.starfall.starsteel_chestplate": "Starsteel Chestplate",
+  "item.starfall.starsteel_leggings": "Starsteel Leggings",
+  "item.starfall.starsteel_boots": "Starsteel Boots",
+  "tooltip.starfall.star_compass": "Use to locate the nearest recorded Fallen Star",
+  "tooltip.starfall.star_compass_memory": "Held compass refreshes every second; remembers distant stars",
+  "message.starfall.compass_empty": "No recorded Fallen Stars remain in this dimension. Watch for a new impact.",
+  "message.starfall.compass_target": "Fallen Star: %s, %s, %s (%s blocks away).",
+  "message.starfall.compass_memory": "Remembered Fallen Star: %s, %s, %s (%s blocks away; verify on arrival).",
+  "tooltip.starfall.starsteel_armor": "Full set: +10% speed and +10% knockback resistance",
+  "tooltip.starfall.starsteel_armor_conditions": "Active only under an open, clear Overworld night sky",
+  "advancement.starfall.star_compass.title": "Chase the Horizon",
+  "advancement.starfall.star_compass.description": "Craft a Star Compass to follow the newest 64 recorded Fallen Stars.",
+  "advancement.starfall.starlit_raiment.title": "Raiment of the Night",
+  "advancement.starfall.starlit_raiment.description": "Collect a full Starsteel armor set for a clear-night expedition bonus."
 }

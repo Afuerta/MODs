@@ -1,0 +1,38 @@
+{
+  "parent": "starfall:starsteel",
+  "display": {
+    "icon": {
+      "id": "starfall:star_compass"
+    },
+    "title": {
+      "translate": "advancement.starfall.star_compass.title"
+    },
+    "description": {
+      "translate": "advancement.starfall.star_compass.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "star_compass": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:star_compass"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "star_compass"
+    ]
+  ],
+  "rewards": {
+    "experience": 20
+  }
+}

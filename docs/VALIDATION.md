@@ -1,29 +1,31 @@
-# Convergence 0.2.0 validation
+# Convergence 0.3.0 validation
 
-Recorded on 2026-10-10 with Java 21, Minecraft 1.21.1 and the pinned Fabric toolchain.
+Recorded on 2026-10-10 with Java 21, Minecraft 1.21.1 and the pinned Fabric toolchain. These are observed local outcomes for the T24 expedition change; GitHub CI verifies the same build before merge. The [0.2.0 record](VALIDATION-0.2.0.md) is retained separately.
 
-GitHub CI independently passed on implementation commit `a4dcdbe7a3574fa1f52c1e88db967f8aad730ba8`: [combined PR build](https://github.com/Afuerta/MODs/actions/runs/38024871080), [Riftbound](https://github.com/Afuerta/MODs/actions/runs/38024871023), [Copperwake](https://github.com/Afuerta/MODs/actions/runs/38024871008), and [original NeoForge Starfall](https://github.com/Afuerta/MODs/actions/runs/38024871076). The verified GitHub pack is byte-identical to the local pack, SHA-256 `4a3a4589e6ca41272f86c2c3112c4eee20bd57feb869f7c7a1ceed5ee6e5ec86`.
-
-The complete root command `build combinedGameTest modpack` passed: **65 actionable tasks, BUILD SUCCESSFUL**. The combined server loaded all four production mods and their four separate test mods.
+The full root command `build combinedGameTest modpack` passed: **65 actionable tasks, BUILD SUCCESSFUL**. The combined server loaded all four production mods and all four test groups.
 
 | Check | Result |
 | --- | --- |
-| Combined Minecraft GameTests | 45 / 45 passed |
-| Riftbound engine tests | 12 / 12, also passed standalone |
-| Copperwake engine tests | 13 / 13, also passed standalone |
-| Starfall engine tests | 12 / 12, also passed standalone |
-| Convergence engine tests | 8 / 8 in the combined runtime |
-| Pure Java domain checks | 10,696 passed: Riftbound 4,015, Copperwake 639, Convergence 6,042 |
-| Production resource validation | 349 JSON resources: 40 + 106 + 171 + 32 |
-| Release packaging | Four remapped production jars; source/test jars excluded |
-| Fixture leakage | Every actual GameTest source class family and test structure excluded |
-| Dependency packaging | Fabric Loader, Fabric API and the Minecraft game remain external |
+| Combined Minecraft GameTests | 71 / 71 passed |
+| Riftbound engine tests | 17 / 17, also passed standalone |
+| Copperwake engine tests | 17 / 17, also passed standalone |
+| Starfall engine tests | 18 / 18, also passed standalone |
+| Convergence engine tests | 19 / 19 in the combined runtime |
+| Standalone engine runs | 52 / 52 passed across the three content mods |
+| Pure Java domain checks | 11,501 passed: Riftbound 4,718, Copperwake 639, Convergence 6,144 |
+| Production resource validation | 425 JSON resources: 40 + 116 + 227 + 42 |
+| Starfall art validation | 55 text textures; 98 models resolve against pinned Minecraft assets |
+| Release packaging | Exactly four remapped production jars, with verified per-jar SHA-256 |
+| Fixture leakage | All nine actual GameTest source class families and three fixture-resource paths excluded |
+| External dependencies | Minecraft, Fabric Loader and Fabric API remain external |
 | Server EULA | Every headless GameTest configuration retains `eula = false` |
 
-The tests exercise safe and rejected meteor impacts, provenance save/load, night mining and actual melee, unrelated mod damage, meteor budgets, wishes, Stardust, registry/recipe loading, guild progression, gadget costs/cooldowns, trial enrollment and cleanup, every aspect hazard, attunement payment, once-only victory rewards, atomic delivery, progression gates, two full commission circuits, recipe discovery, and actual main-hand repair interaction with an offhand Bow.
+New tests cover all three encounter patterns, delayed reinforcements and blocked release, conversion/priority behavior, party scaling and eligibility, bounded persistent compass records, stale/unloaded targets, mining reselection, dimension changes, actual vanilla compass ticks, armor repair/enchantments and clear-night transitions. Station tests exercise every formula and exact payment, deficient ingredients/trophies, weather/roof pauses, output overflow, changed inputs, registry-aware NBT reload, actual screen normal/shift clicks, real hopper transfer and the block-entity ticker.
 
-The full server output is captured by CI as `minecraft/build/verification.log`, alongside available per-module logs. The installable ZIP is `minecraft/build/distributions/convergence-0.2.0-fabric-1.21.1.zip`; its manifest and checksums record the exact four jars.
+A real jigsaw-generator test exposed a pre-existing Copperwake defect: `size: 0` definitions decoded and placed templates in isolation but produced no natural start pieces. All five definitions now use positive depth and still generate exactly one piece because the templates have no jigsaw connectors. Tests exercise all five natural starts at three noise-sampled Rustwild coordinates, surface-height anchoring and biome rejection. Existing three template bytes, IDs and placement grids remain unchanged. New tests also cover both landmark routes, guards, cache exhaustion and 128 bounded loot samples.
 
-These results cover the Fabric suite. The original NeoForge Starfall import had a separate successful GitHub Actions run before this integration and remains a separate build profile.
+Three upgrade tests read a committed authored T23-format SNBT fixture. They load original UUID scores/circuit positions/gates through vanilla `ScoreboardState`, decode all four original item namespaces with retained counts/tool damage/name, and restore protected terrain at negative chunks and bit boundaries. This is a compatibility fixture, not a sampled user world or a literal full-process upgrade test.
 
-Desktop rendering, animation feel, audio, controls, multiplayer latency and long survival pacing have not been human-playtested. The alpha is intended for an initial fresh-world playtest. Starfall cannot identify pre-installation constructions made entirely from natural dirt or stone; existing worlds can disable crater excavation with `craters.enabled = false`. See the play guide and module READMEs.
+The complete server output is captured at `minecraft/build/verification.log` and uploaded by CI with diagnostic logs. The pack is `minecraft/build/distributions/convergence-0.3.0-fabric-1.21.1.zip`: **377,011 bytes**, SHA-256 `e10f1eac377f35f17437a01746b7ec0b718b30447e3d43baa3c78d9ee3319292`. Its manifest records Riftbound, Starfall and Convergence 0.3.0 and Copperwake 0.3.0-alpha.1.
+
+Original NeoForge Starfall is untouched and remains a separate build profile. Texture sheets and the source-derived landmark geometry preview were inspected. Desktop rendering, control clarity, multiplayer latency, long survival pacing, many-seed terrain exploration and literal process-restart playtests remain unperformed. Use a fresh test world first; landmarks appear in newly generated chunks and the compass records impacts after installation. Existing worlds made from natural dirt/stone can disable crater excavation with `craters.enabled = false`. See the play guide and module READMEs.

@@ -1,6 +1,8 @@
 package com.afuerta.riftbound;
 
 import com.afuerta.riftbound.domain.Aspect;
+import com.afuerta.riftbound.domain.EncounterPattern;
+import net.minecraft.entity.effect.StatusEffects;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -298,6 +300,209 @@ public final class RiftboundGameTests implements FabricGameTest {
                     context.assertEquals(0, count(player, convergenceItem("concordance")), "Withdrawn player received Concordance");
                     context.assertEquals(0, trialMobs(context, anchor).size(), "Abort left Convergence enemies");
                 } finally { removePlayer(context, player); removePlayer(context, bystander); }
+                context.complete();
+            });
+        });
+    }
+
+    @GameTest(templateName = "riftbound_test:arena", batchId = "riftbound_staged_pincer", tickLimit = 500)
+    public void reinforcementsPreventEarlyClearAndNextWaveUsesOpposingPincer(TestContext context) {
+        var player = survivalPlayerAtAnchor(context);
+        var anchor = context.getAbsolutePos(new BlockPos(15, 1, 15));
+        selectTier(player, anchor, 1);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(RiftboundMod.ECHOES.get(Aspect.VERDANT), 2));
+        RiftboundMod.TRIALS.useAnchor(player, anchor);
+        AtomicLong combatStart = new AtomicLong(-1);
+        AtomicInteger stage = new AtomicInteger();
+        context.runAtEveryTick(() -> {
+            if (stage.get() == 3) return;
+            var alive = trialMobs(context, anchor).stream().filter(MobEntity::isAlive).toList();
+            alive.forEach(mob -> mob.setAiDisabled(true));
+            if (stage.get() == 0 && !alive.isEmpty()) {
+                context.assertEquals(3, alive.size(), "Adept reinforcement wave must deploy only its three-mob vanguard");
+                combatStart.set(context.getWorld().getTime());
+                alive.forEach(mob -> mob.damage(context.getWorld().getDamageSources().generic(), 1000));
+                stage.set(1);
+            } else if (stage.get() == 1) {
+                context.assertEquals(0, count(player, RiftboundMod.RESONANCE), "Vanguard clear awarded shards");
+                if (alive.isEmpty()) return;
+                context.assertTrue(context.getWorld().getTime() - combatStart.get()
+                                >= EncounterPattern.REINFORCEMENT_DELAY_TICKS - 1,
+                        "Reinforcements skipped their full five-second warning");
+                context.assertEquals(2, alive.size(), "Vanguard clear advanced without both reserved enemies");
+                for (MobEntity mob : alive) {
+                    context.assertFalse(mob.shouldDropXp(), "Reserved enemies regained ordinary XP");
+                    mob.damage(context.getWorld().getDamageSources().generic(), 1000);
+                }
+                stage.set(2);
+            } else if (stage.get() == 2 && !alive.isEmpty()) {
+                context.assertEquals(6, alive.size(), "Pincer changed the planned six-enemy count");
+                context.assertTrue(alive.stream().anyMatch(mob -> mob.getX() < anchor.getX() - 4)
+                                && alive.stream().anyMatch(mob -> mob.getX() > anchor.getX() + 4),
+                        "Pincer did not enter from opposing sides");
+                context.assertTrue(alive.stream().allMatch(mob -> mob.hasStatusEffect(StatusEffects.SPEED)),
+                        "Pincer did not apply its opening rush");
+                stage.set(3);
+                RiftboundMod.TRIALS.cancel(player);
+                context.waitAndRun(3, () -> {
+                    try {
+                        context.assertEquals(0, trialMobs(context, anchor).size(), "Cancelled pincer left enemies");
+                        context.assertEquals(0, count(player, RiftboundMod.RESONANCE), "Cancelled encounter paid out");
+                    } finally { removePlayer(context, player); }
+                    context.complete();
+                });
+            }
+        });
+    }
+
+    @GameTest(templateName = "riftbound_test:arena", batchId = "riftbound_blocked_reserves", tickLimit = 400)
+    public void obstructedReinforcementsAbortWithoutLootOrOrphans(TestContext context) {
+        var player = survivalPlayerAtAnchor(context);
+        var anchor = context.getAbsolutePos(new BlockPos(15, 1, 15));
+        selectTier(player, anchor, 1);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(RiftboundMod.ECHOES.get(Aspect.VERDANT), 2));
+        RiftboundMod.TRIALS.useAnchor(player, anchor);
+        AtomicBoolean blocked = new AtomicBoolean();
+        context.runAtEveryTick(() -> {
+            if (blocked.get()) return;
+            var alive = trialMobs(context, anchor).stream().filter(MobEntity::isAlive).toList();
+            if (alive.isEmpty()) return;
+            blocked.set(true);
+            alive.forEach(mob -> mob.setAiDisabled(true));
+            // The already activated arena was valid. Simulate building over every marked gate.
+            for (int x = -12; x <= 12; x++) for (int z = -12; z <= 12; z++) {
+                if (Math.abs(x) < 4 && Math.abs(z) < 4) continue;
+                for (int y = 0; y <= 2; y++) context.getWorld().setBlockState(anchor.add(x, y, z),
+                        net.minecraft.block.Blocks.STONE.getDefaultState());
+            }
+            context.waitAndRun(130, () -> {
+                try {
+                    context.assertEquals(0, trialMobs(context, anchor).size(), "Blocked reserve deployment left trial mobs");
+                    context.assertTrue(alive.stream().allMatch(mob -> mob.isRemoved()
+                                    && !RiftboundMod.TRIALS.isManagedMob(mob.getUuid())),
+                            "Deployment failure retained deployed enemies or managed UUIDs");
+                    context.assertEquals(0, count(player, RiftboundMod.RESONANCE), "Blocked deployment awarded shards");
+                    context.assertEquals(1, PlayerProgress.completedTier(player), "Failed deployment unlocked Adept completion");
+                } finally { removePlayer(context, player); }
+                context.complete();
+            });
+        });
+    }
+
+    @GameTest(templateName = "riftbound_test:arena", batchId = "riftbound_cancel_reserves", tickLimit = 400)
+    public void withdrawalCancelsUnspawnedReinforcements(TestContext context) {
+        var player = survivalPlayerAtAnchor(context);
+        var anchor = context.getAbsolutePos(new BlockPos(15, 1, 15));
+        selectTier(player, anchor, 1);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(RiftboundMod.ECHOES.get(Aspect.VERDANT), 2));
+        RiftboundMod.TRIALS.useAnchor(player, anchor);
+        AtomicBoolean cancelled = new AtomicBoolean();
+        context.runAtEveryTick(() -> {
+            if (cancelled.get() || trialMobs(context, anchor).isEmpty()) return;
+            cancelled.set(true);
+            RiftboundMod.TRIALS.cancel(player);
+            context.waitAndRun(140, () -> {
+                try {
+                    context.assertEquals(0, trialMobs(context, anchor).size(), "Withdrawal released orphan reinforcements later");
+                    context.assertEquals(0, count(player, RiftboundMod.RESONANCE), "Withdrawn player received rewards");
+                } finally { removePlayer(context, player); }
+                context.complete();
+            });
+        });
+    }
+
+    @GameTest(templateName = "riftbound_test:arena", batchId = "riftbound_standard_guard", tickLimit = 900)
+    public void standardBearerConversionPreservesPriorityAndDeathRemovesGuard(TestContext context) {
+        var player = survivalPlayerAtAnchor(context);
+        var anchor = context.getAbsolutePos(new BlockPos(15, 1, 15));
+        selectTier(player, anchor, 1);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(RiftboundMod.ECHOES.get(Aspect.VERDANT), 2));
+        RiftboundMod.TRIALS.useAnchor(player, anchor);
+        AtomicBoolean verifying = new AtomicBoolean();
+        context.runAtEveryTick(() -> {
+            if (verifying.get()) return;
+            var alive = trialMobs(context, anchor).stream().filter(MobEntity::isAlive).toList();
+            alive.forEach(mob -> mob.setAiDisabled(true));
+            var bearer = alive.stream().filter(MobEntity::isGlowing).findFirst().orElse(null);
+            if (bearer == null) {
+                alive.forEach(mob -> mob.damage(context.getWorld().getDamageSources().generic(), 1000));
+                return;
+            }
+            verifying.set(true);
+            context.assertEquals(7, alive.size(), "Standard guard changed the planned third wave");
+            context.assertTrue(bearer instanceof ZombieEntity, "Bearer lost its aspect signature type");
+            var converted = bearer.convertTo(EntityType.DROWNED, true);
+            context.assertTrue(converted != null && converted.isGlowing() && converted.hasCustomName(),
+                    "Conversion lost the marked priority target");
+            context.assertTrue(RiftboundMod.TRIALS.isManagedMob(converted.getUuid()) && !converted.shouldDropXp(),
+                    "Converted bearer lost management or loot suppression");
+            converted.setAiDisabled(true);
+            converted.refreshPositionAndAngles(anchor.getX() + .5, anchor.getY(), anchor.getZ() + .5, 0, 0);
+            var allies = alive.stream().filter(mob -> mob != bearer).toList();
+            for (int i = 0; i < allies.size(); i++) allies.get(i).refreshPositionAndAngles(
+                    anchor.getX() + 2.5 + i % 3, anchor.getY(), anchor.getZ() + 2.5 + i / 3, 0, 0);
+            var far = allies.get(0);
+            far.refreshPositionAndAngles(anchor.getX() - 14.5, anchor.getY(), anchor.getZ() + .5, 0, 0);
+            var ordinary = context.spawnMob(EntityType.ZOMBIE, new BlockPos(15, 1, 18));
+            ordinary.setAiDisabled(true);
+            context.waitAndRun(45, () -> {
+                context.assertFalse(converted.hasStatusEffect(StatusEffects.RESISTANCE), "Bearer protected itself");
+                context.assertFalse(far.hasStatusEffect(StatusEffects.RESISTANCE), "Guard extended beyond eight blocks");
+                context.assertFalse(ordinary.hasStatusEffect(StatusEffects.RESISTANCE), "Guard affected an ordinary bystander mob");
+                context.assertTrue(allies.stream().filter(mob -> mob != far)
+                                .allMatch(mob -> mob.hasStatusEffect(StatusEffects.RESISTANCE)),
+                        "Converted bearer did not guard its nearby registered allies");
+                converted.damage(context.getWorld().getDamageSources().generic(), 1000);
+                context.assertTrue(allies.stream().noneMatch(mob -> mob.hasStatusEffect(StatusEffects.RESISTANCE)),
+                        "Defeating the priority target did not immediately remove its guard");
+                ordinary.discard();
+                RiftboundMod.TRIALS.cancel(player);
+                context.waitAndRun(3, () -> {
+                    try {
+                        context.assertEquals(0, trialMobs(context, anchor).size(), "Converted standard guard left orphans");
+                        context.assertEquals(0, count(player, RiftboundMod.RESONANCE), "Cancelled priority encounter rewarded player");
+                    } finally { removePlayer(context, player); }
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    @GameTest(templateName = "riftbound_test:arena", batchId = "riftbound_advanced_party", tickLimit = 950)
+    public void advancedPartyKeepsOriginalScalingAndRewardsOnlyEligibleSurvivor(TestContext context) {
+        var player = survivalPlayerAtAnchor(context);
+        var anchor = context.getAbsolutePos(new BlockPos(15, 1, 15));
+        selectTier(player, anchor, 1);
+        var departed = createSurvivalServerPlayer(context);
+        departed.getAbilities().invulnerable = true;
+        departed.refreshPositionAndAngles(player.getX(), player.getY(), player.getZ(), 0, 0);
+        PlayerProgress.complete(departed, 1);
+        RiftboundMod.TRIALS.ready(departed);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(RiftboundMod.ECHOES.get(Aspect.VERDANT), 4));
+        RiftboundMod.TRIALS.useAnchor(player, anchor);
+        RiftboundMod.TRIALS.cancel(departed);
+        AtomicInteger defeated = new AtomicInteger();
+        AtomicBoolean finished = new AtomicBoolean();
+        context.runAtEveryTick(() -> {
+            if (finished.get()) return;
+            for (MobEntity mob : trialMobs(context, anchor)) {
+                if (!mob.isAlive()) continue;
+                mob.setAiDisabled(true);
+                if (mob.damage(context.getWorld().getDamageSources().generic(), 1000)) defeated.incrementAndGet();
+            }
+            if (PlayerProgress.completedTier(player) != 2) return;
+            finished.set(true);
+            context.assertEquals(40, defeated.get(), "Withdrawal reduced the original two-player planned encounter");
+            context.assertEquals(6, count(player, RiftboundMod.RESONANCE), "Ordinary Adept changed its six-shard reward");
+            context.assertEquals(0, count(departed, RiftboundMod.RESONANCE), "Withdrawn participant received shards");
+            context.assertEquals(1, PlayerProgress.completedTier(departed), "Withdrawn participant gained progression");
+            RiftboundMod.TRIALS.useAnchor(player, anchor);
+            context.waitAndRun(25, () -> {
+                try {
+                    context.assertEquals(6, count(player, RiftboundMod.RESONANCE), "Advanced terminal ticks duplicated rewards");
+                    context.assertEquals(2, player.getMainHandStack().getCount(), "Cooldown consumed a second offering");
+                    context.assertEquals(0, trialMobs(context, anchor).size(), "Advanced party completion left enemies");
+                } finally { removePlayer(context, player); removePlayer(context, departed); }
                 context.complete();
             });
         });

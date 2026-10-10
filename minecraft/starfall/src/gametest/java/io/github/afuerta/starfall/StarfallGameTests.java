@@ -44,7 +44,7 @@ public final class StarfallGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void originalAndExpandedRegistriesAndRecipesLoad(TestContext context) {
         context.assertEquals(17, ModBlocks.ALL.size(), "Expected six original and eleven expanded blocks");
-        context.assertEquals(26, ModItems.ALL.size(), "Expected original materials/tools plus every block item");
+        context.assertEquals(31, ModItems.ALL.size(), "Expected original materials/tools, expedition gear and every block item");
         for (String name : ModBlocks.ALL.keySet()) {
             context.assertTrue(Registries.BLOCK.containsId(Starfall.id(name)), "Missing block " + name);
             context.assertTrue(Registries.ITEM.containsId(Starfall.id(name)), "Missing block item " + name);

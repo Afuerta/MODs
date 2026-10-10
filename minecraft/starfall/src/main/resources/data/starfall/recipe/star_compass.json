@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " I ",
+    "SCS",
+    " I "
+  ],
+  "key": {
+    "I": {
+      "item": "starfall:starsteel_ingot"
+    },
+    "S": {
+      "item": "starfall:star_shard"
+    },
+    "C": {
+      "item": "minecraft:compass"
+    }
+  },
+  "result": {
+    "id": "starfall:star_compass",
+    "count": 1
+  }
+}

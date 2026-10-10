@@ -1,6 +1,6 @@
 # Convergence: Threefold Expeditions
 
-Convergence joins **Riftbound 0.2.0**, **Copperwake** and the **Starfall Fabric 0.2.0 port**
+Convergence **0.3.0** joins **Riftbound**, **Copperwake** and the **Starfall Fabric port**
 on Minecraft Java **1.21.1**, Fabric Loader **0.16.14+**, Fabric API **0.116.17+1.21.1**
 and Java **21**. Install all four Fabric mod jars and Fabric API on clients and servers.
 The original NeoForge Starfall jar does not belong in this Fabric installation.
@@ -87,6 +87,50 @@ after swapping offhand items, except Night Vision fades within 13 seconds to avo
 short-duration flicker. Brief overlap when swapping is normal. The Stormward Sigil protects against
 ordinary fire but Convergence hazards can still deal other damage.
 
+## Astral Infusion Station
+
+Craft the station after earning a Tempered Focus. Its recipe-book discovery unlocks on your first
+Focus and consumes **2 Resonance Shards, 3 Starsteel Ingots, 2 Brass Gears, 1 Charged Core and
+1 Tempered Focus**. Place it outdoors in the Overworld. Right-click for the normal Minecraft
+3×3 container; sneak and right-click to print every exact formula. Status/progress appears in
+the action bar while the menu is open. The block glows while processing.
+
+| Rift material | Copper material | Starsteel |
+|---|---|---|
+| Concordance | Tempered Focus | Harmonic Matrix |
+| Confluence Filament | Output only | Output only |
+
+Top and side hoppers route valid materials into their assigned input positions. A bottom hopper
+extracts **only** the two output positions; it cannot remove fuel, catalysts or trophies. Manual
+clicks and shift-clicks enforce the same input positions and reject output insertion. Players may
+manually retrieve unused inputs. Any player may use a shared station; it has no owner lock.
+
+| Result | Rift input | Copper input | Starsteel | Concordance | Focus | Matrix | Filaments |
+|---|---|---|---:|---:|---:|---:|---:|
+| Astral Lens | 2 Verdant Echo | 2 Memory Glass | 1 | 1 | 1 | 0 | 2 |
+| Stormward Sigil | 2 Tidal Echo | 2 Charged Core | 2 | 2 | 0 | 1 | 1 |
+| Expedition Harness | 2 Hollow Echo | 2 Brass Gear | 2 | 1 | 2 | 1 | 2 |
+| Mender Coil | 2 Ember Echo | 2 Brass Gear | 1 | 1 | 1 | 0 | 2 |
+
+Each formula takes **10 processing seconds** during clear Overworld night (time 13,000–22,999),
+with open sky above the station. Daylight, rain, thunder, a newly placed roof or full outputs
+**pause** its elapsed progress without consuming anything. It never loads other chunks; unloaded
+stations stop processing. A changed or incomplete formula resets its elapsed work on the next
+one-second check. Valid surplus catalysts in an unused Focus/Matrix position remain untouched.
+
+Every ingredient and a free result position are validated before one server-thread transaction
+consumes the entire recipe and creates exactly one relic. Both input stacks and elapsed progress
+persist through world saves/reloads. Removing the station drops its contents once; progress is
+not stored in the dropped block item. Corrupted oversized inputs are rejected; full or oversized
+outputs block payment and remain recoverable. Unknown saved recipe IDs reset progress.
+
+Existing crafting-table recipes remain available. Infusion trades extra Rift materials and clear-night
+processing for fewer Filaments: Lens 4→2, Sigil 2→1, Harness 3→2 and Mender 4→2. The Mender
+formula also trades its usual Charged Core for Starsteel. Every original Concordance, Focus and
+Matrix cost remains intact. No station recipe creates commission inputs or earned catalysts/trophies.
+The station's four fixed formulas are defined in `domain/InfusionCatalog.java`; they are separate
+from vanilla crafting recipes and are listed by the station's translated in-game guide.
+
 ## Commands and persistence
 
 - `/convergence help` — commands and guide entry point.
@@ -126,12 +170,21 @@ delivery reward/progress; hardmode milestone linkage; two full circuits; gadget 
 and passive effects through real server ticks. Client rendering and in-game feel need a desktop
 play session. The tests use their own Fabric test source set and do not ship in the release jar.
 
-Verified for this expansion: **6,042 domain checks**, resource validation of **32 JSON files,
+Verified for the previous 0.2.0 release: **6,042 domain checks**, resource validation of **32 JSON files,
 11 sprites/models and 7 recipes**, and **all 8 Convergence GameTests** passed. The combined
 four-mod server suite passed **all 45 required tests**. The Mender Coil check uses actual
 `ServerPlayerInteractionManager.interactItem` dispatch with the Coil in the main hand and a
 damaged Bow in the offhand, including invalid-target, fuel and cooldown checks.
 
 Sprites are authored as explicit pixel primitives in `tools/generate_assets.py`, which writes
-the eleven 16×16 textures and their models alongside recipes, translations and advancements.
+the eleven 16×16 item textures and four station textures, models, recipes, translations and advancements.
 Run that script after editing those definitions.
+
+The 0.3.0 station adds **eight engine GameTests**: all four full transactions, missing/invalid
+inputs including each trophy gate, day/rain/thunder/immediate-roof pause, output overflow/recovery
+and recipe changes, registry-aware inventory/progress NBT reload, actual normal/shift screen clicks,
+actual vanilla hopper insertion/extraction, and completion through the real block-entity ticker.
+Those checks are awaiting the coordinated 0.3.0 runtime run. Independent checks already passed:
+**6,144 domain assertions**, **42 JSON resources**, **11 original item sprites/models**, **4 new
+block textures**, and **8 crafting recipes**. The station shares vanilla client container rendering;
+visual polish and multiplayer feel still need an interactive play session.

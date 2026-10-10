@@ -2,6 +2,22 @@
 
 The current implementation is an initial development build, not a fully playtested release.
 
+## v0.3 encounter expansion
+
+The added tests exercise the real server adapter in the headless Minecraft harness; they do not establish multiplayer combat balance or client readability.
+
+| Added engine scenario | Contract |
+| --- | --- |
+| Reinforcements then pincer | Three vanguard enemies cannot clear a five-enemy wave; two reserves arrive after the full warning; the following six enemies enter from opposite sides with the brief rush effect |
+| Obstructed reserves | Building over reserved gates after activation aborts the run, removes deployed and prepared enemies, and awards no shards or progression |
+| Withdrawal with reserves | Cancelling before deployment never releases the reserved enemies later and grants no rewards |
+| Converted standard-bearer | Conversion preserves the named glowing priority target and loot suppression; guard affects only nearby registered allies, excludes the bearer and ordinary mobs, and ends immediately on bearer death |
+| Advanced party completion | Party scaling stays fixed after withdrawal; all planned enemies must die; only the eligible survivor receives the unchanged reward once |
+
+Domain checks cover deterministic pattern selection, unchanged Initiate composition/counts, bounded unique pincer slots, immutable pending UUID reservations, atomic invalid reservation rejection, late/duplicate deaths and deployments, converted reserve accounting, no early wave completion, and failure preventing delayed deployment.
+
+Direct Java 21 compilation with `-Xlint:all` and all **4,718 domain checks** pass. Fabric production and GameTest source compilation pass; all **17 required Riftbound headless engine tests** passed, including the five new scenarios above. Static resource validation passes with all encounter telegraphs and the priority target name required. The root validation record tracks the combined four-mod build and runtime separately.
+
 ## v0.2 expansion checks
 
 - Main and GameTest source compilation, remapped JAR/source packaging, and standalone Fabric runtime: passed.
@@ -64,3 +80,13 @@ This checklist is not evidence that these manual sessions have run.
 - Run both tiers solo and in a party, stand inside and outside each marked zone, and compare enrolled players with nearby unready bystanders.
 - Move out of a Verdant patch after warning, escape Ember lanes, avoid the Tidal ring, and step aside from a Hollow lane. Check that magic Ember damage is still relevant with Fire Resistance.
 - Finish with full inventories, leave during a warning, die on an impact, destroy the anchor, or obstruct a later spawn. Confirm no delayed impacts or duplicate Concordance rewards remain.
+
+## Advanced encounter manual checks
+
+- Play Adept and Exalted solo and with four players, both ordinary and attuned, with each Echo aspect.
+- Observe text, sound, reserve gates and glowing bearer with low particles and normal network latency.
+- Check that the pincer leaves usable movement routes and that the five-second reserve warning is readable.
+- Pull guarded enemies beyond eight blocks, defeat the bearer first, and convert it in water; compare tactics against ordinary simultaneous waves.
+- Obstruct a reserve gate or remove the anchor during the warning. Confirm there is no delayed spawn, normal mob loot or extra completion payout.
+
+These manual sessions have not been run by an AI agent.

@@ -1,0 +1,77 @@
+{
+  "parent": "starfall:starsteel",
+  "display": {
+    "icon": {
+      "id": "starfall:starsteel_chestplate"
+    },
+    "title": {
+      "translate": "advancement.starfall.starlit_raiment.title"
+    },
+    "description": {
+      "translate": "advancement.starfall.starlit_raiment.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "starsteel_helmet": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:starsteel_helmet"
+          }
+        ]
+      }
+    },
+    "starsteel_chestplate": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:starsteel_chestplate"
+          }
+        ]
+      }
+    },
+    "starsteel_leggings": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:starsteel_leggings"
+          }
+        ]
+      }
+    },
+    "starsteel_boots": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:starsteel_boots"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "starsteel_helmet"
+    ],
+    [
+      "starsteel_chestplate"
+    ],
+    [
+      "starsteel_leggings"
+    ],
+    [
+      "starsteel_boots"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

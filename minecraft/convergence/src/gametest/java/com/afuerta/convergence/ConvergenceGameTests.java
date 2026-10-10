@@ -49,7 +49,7 @@ public final class ConvergenceGameTests implements FabricGameTest {
         var recipes = context.getWorld().getRecipeManager();
         context.assertFalse(recipes.isErrored(), "One of the four mods has an invalid recipe");
         for (String name : List.of("field_atlas", "attunement_core", "astral_lens", "stormward_sigil",
-                "expedition_harness", "triune_pulse", "mender_coil")) {
+                "expedition_harness", "triune_pulse", "mender_coil", "astral_infuser")) {
             var recipe = recipes.get(ConvergenceMod.id(name));
             context.assertTrue(recipe.isPresent(), "Cross-mod recipe did not decode: " + name);
             context.assertTrue(recipe.orElseThrow().value().getResult(context.getWorld().getRegistryManager())
@@ -57,7 +57,7 @@ public final class ConvergenceGameTests implements FabricGameTest {
             context.assertTrue(context.getWorld().getServer().getAdvancementLoader().get(ConvergenceMod.id("recipes/" + name)) != null,
                     "Recipe-book discovery advancement did not decode: " + name);
         }
-        for (String name : List.of("root", "attunement", "concord", "focus", "matrix")) {
+        for (String name : List.of("root", "attunement", "concord", "focus", "matrix", "infuser")) {
             context.assertTrue(context.getWorld().getServer().getAdvancementLoader().get(ConvergenceMod.id(name)) != null,
                     "Advancement did not decode: " + name);
         }
