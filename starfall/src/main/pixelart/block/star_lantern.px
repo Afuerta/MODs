@@ -1,0 +1,28 @@
+// Star Lantern: starsteel frame around a captured star.
+palette:
+a #23264A
+b #5A79B8
+c #3A4A86
+d #4C88B8
+e #7CC4E8
+f #E8F7FF
+g #B9E9FF
+h #FFE79A
+i #FFF8DD
+pixels:
+aaaaaaaaaaaaaaaa
+abcbcbcbcbcbcbca
+acdddddeedddddba
+abdddeeffeedddca
+acddeeggggeeddba
+abdeegghhggeedca
+acdegghiihggedba
+abefghiiiihgfeca
+acefghiiiihgfeba
+abdegghiihggedca
+acdeegghhggeedba
+abddeeggggeeddca
+acdddeeffeedddba
+abdddddeedddddca
+acbcbcbcbcbcbcba
+aaaaaaaaaaaaaaaa

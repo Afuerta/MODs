@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "FLF",
+    "SCS",
+    "LML"
+  ],
+  "key": {
+    "F": {
+      "item": "convergence:tempered_focus"
+    },
+    "L": {
+      "item": "convergence:confluence_filament"
+    },
+    "S": {
+      "item": "starfall:starsteel_ingot"
+    },
+    "C": {
+      "item": "convergence:concordance"
+    },
+    "M": {
+      "item": "convergence:harmonic_matrix"
+    }
+  },
+  "result": {
+    "id": "convergence:expedition_harness",
+    "count": 1
+  }
+}

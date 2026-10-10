@@ -24,6 +24,8 @@ public final class DomainTests {
         conversionPreservesOutstandingEnemies();
         timeoutAndClockBoundaries();
         cooldownBoundaries();
+        hazardWarningsAndLag();
+        hazardGeometry();
         System.out.println("Riftbound domain tests passed (" + checks + " checks).");
     }
 
@@ -277,6 +279,68 @@ public final class DomainTests {
 
     private static TrialPlan plan(int party, long seed) {
         return TrialPlanner.plan(Aspect.VERDANT, TrialTier.INITIATE, party, seed);
+    }
+
+    private static void hazardWarningsAndLag() {
+        expect(IllegalArgumentException.class, () -> new HazardSchedule(TrialTier.INITIATE));
+        for (TrialTier tier : List.of(TrialTier.ADEPT, TrialTier.EXALTED)) {
+            HazardSchedule clock = new HazardSchedule(tier);
+            check(clock.warningTicks() >= 40, "Every tier provides two seconds warning");
+            check(clock.advance(0, 0) == HazardSchedule.Event.NONE, "Combat starts with grace");
+            check(clock.advance(59, 0) == HazardSchedule.Event.NONE, "Full initial grace");
+            check(clock.advance(1_000, 0) == HazardSchedule.Event.WARNING, "Delayed polling emits warning first");
+            check(clock.impactTick() == 1_000 + clock.warningTicks(), "Warning clock begins on actual emission");
+            check(clock.advance(1_000, 0) == HazardSchedule.Event.NONE, "No duplicate same-tick warning");
+            check(clock.advance(1_039, 0) == HazardSchedule.Event.NONE, "No early impact after lag");
+            long firstImpact = 1_000 + clock.warningTicks();
+            check(clock.advance(firstImpact, 0) == HazardSchedule.Event.IMPACT, "Impact after full warning");
+            check(clock.advance(firstImpact, 0) == HazardSchedule.Event.NONE, "No duplicate same-tick impact");
+            long nextWarning = firstImpact + 200 - clock.warningTicks();
+            check(clock.advance(nextWarning, 0) == HazardSchedule.Event.WARNING, "Next warning scheduled");
+            check(clock.advance(firstImpact + 199, 0) == HazardSchedule.Event.NONE, "Impacts never occur less than 200 ticks apart");
+            check(clock.advance(firstImpact + 200, 0) == HazardSchedule.Event.IMPACT, "Exact repeat interval");
+            check(clock.advance(firstImpact + 201, -1) == HazardSchedule.Event.NONE, "Intermission suspends");
+            check(clock.advance(firstImpact + 202, 1) == HazardSchedule.Event.NONE, "New wave grace");
+            check(clock.advance(firstImpact + 262, 1) == HazardSchedule.Event.WARNING, "New wave warning");
+            check(clock.impactTick() >= firstImpact + 400, "Wave change cannot bypass impact interval");
+            check(clock.advance(firstImpact + 263, -1) == HazardSchedule.Event.NONE, "Intermission cancels pending impact");
+            check(!clock.isWarning(), "Cancelled warning has no remaining zone");
+            check(clock.advance(firstImpact + 600, -1) == HazardSchedule.Event.NONE, "Cancelled warning cannot strike later");
+            clock.advance(firstImpact + 601, 2);
+            clock.advance(firstImpact + 661, 2);
+            clock.stop();
+            check(!clock.isWarning() && clock.advance(firstImpact + 1_000, 2) == HazardSchedule.Event.NONE,
+                    "Terminal cleanup permanently stops pending and future hazards");
+            expect(IllegalArgumentException.class, () -> clock.advance(0, 2));
+        }
+        HazardSchedule overflow = new HazardSchedule(TrialTier.EXALTED);
+        overflow.advance(Long.MAX_VALUE - 20, 0);
+        check(overflow.advance(Long.MAX_VALUE, 0) == HazardSchedule.Event.NONE,
+                "Overflow cannot shorten warning into an immediate impact");
+    }
+
+    private static void hazardGeometry() {
+        for (Aspect aspect : Aspect.values()) {
+            HazardZone zone = HazardZone.create(aspect, 42, 1, 4, 6);
+            check(zone.equals(HazardZone.create(aspect, 42, 1, 4, 6)), "Zone planning is deterministic");
+            check(!zone.markers().isEmpty() && zone.markers().size() <= 625, "Every hazard has bounded visible markers");
+            for (HazardZone.Point point : zone.markers()) {
+                check(zone.contains(point.x(), point.z()), "Visible markers match damaging geometry");
+            }
+            check(!zone.contains(25, 0) && !zone.contains(Double.NaN, 0), "Zone cannot affect outside arena or invalid coordinates");
+            expect(UnsupportedOperationException.class, () -> zone.markers().clear());
+        }
+        HazardZone roots = new HazardZone(Aspect.VERDANT, 100, 0, 0);
+        check(roots.focusX() == 18 && roots.contains(21, 0) && !roots.contains(21.01, 0), "Root target clamps and has exact radius");
+        HazardZone ember = new HazardZone(Aspect.EMBER, 0, 0, 0);
+        check(ember.contains(0, 6) && ember.contains(0, -6) && !ember.contains(0, 0), "Ember lanes leave a safe gap");
+        HazardZone tidal = new HazardZone(Aspect.TIDAL, 0, 0, 0);
+        check(tidal.contains(6, 0) && tidal.contains(18, 0) && !tidal.contains(5.99, 0)
+                && !tidal.contains(18.01, 0), "Tidal ring has readable safe inner and outer zones");
+        HazardZone hollow = new HazardZone(Aspect.HOLLOW, 0, 0, Math.PI / 2);
+        check(hollow.contains(0, 12) && !hollow.contains(5, 0), "Hollow line rotation");
+        expect(IllegalArgumentException.class, () -> HazardZone.create(Aspect.EMBER, 0, 0, 0, 0));
+        expect(IllegalArgumentException.class, () -> new HazardZone(Aspect.TIDAL, Double.NaN, 0, 0));
     }
 
     private static List<UUID> freshMobs(int count) {

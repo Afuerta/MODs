@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "starfall:starstone_slab",
+    "starfall:starstone_brick_slab",
+    "starfall:polished_starstone_slab"
+  ]
+}

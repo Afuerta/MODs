@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "#",
+    "#"
+  ],
+  "key": {
+    "#": {
+      "item": "starfall:starstone_slab"
+    }
+  },
+  "result": {
+    "id": "starfall:chiseled_starstone",
+    "count": 1
+  }
+}

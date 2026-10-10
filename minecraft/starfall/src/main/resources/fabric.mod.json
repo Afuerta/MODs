@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1, "id": "starfall", "version": "${version}",
+  "name": "Starfall", "description": "Chase falling stars, build with crater stone, and forge gear that shines under the night sky.",
+  "authors": ["Afuerta"], "license": "All rights reserved", "environment": "*",
+  "entrypoints": {"main": ["io.github.afuerta.starfall.Starfall"]},
+  "mixins": ["starfall.mixins.json"],
+  "depends": {"fabricloader": ">=0.16.14", "minecraft": "~1.21.1", "java": ">=21", "fabric-api": "*"}
+}

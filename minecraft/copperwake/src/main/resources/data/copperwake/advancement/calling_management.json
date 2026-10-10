@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "copperwake:foreman_seal"
+    },
+    "title": {
+      "translate": "advancement.copperwake.calling_management.title"
+    },
+    "description": {
+      "translate": "advancement.copperwake.calling_management.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "acquire": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "copperwake:foreman_seal"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "experience": 40
+  },
+  "parent": "copperwake:live_wire"
+}

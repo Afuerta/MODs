@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "###",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "starfall:starstone_bricks"
+    }
+  },
+  "result": {
+    "id": "starfall:starstone_brick_wall",
+    "count": 6
+  }
+}

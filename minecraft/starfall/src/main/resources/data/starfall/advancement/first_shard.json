@@ -1,0 +1,38 @@
+{
+  "display": {
+    "icon": {
+      "id": "starfall:star_shard"
+    },
+    "title": {
+      "translate": "advancement.starfall.first_shard.title"
+    },
+    "description": {
+      "translate": "advancement.starfall.first_shard.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png"
+  },
+  "criteria": {
+    "star_shard": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:star_shard"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "star_shard"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

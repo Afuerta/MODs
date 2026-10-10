@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "io.github.afuerta.starfall.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "StarlitPlayerMixin",
+    "StarlitDamageMixin",
+    "StarlitTooltipMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

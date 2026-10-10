@@ -5,6 +5,7 @@
   "name": "Riftbound engine integration tests",
   "environment": "server",
   "entrypoints": {
+    "main": ["com.afuerta.riftbound.ConvergenceTestItems"],
     "fabric-gametest": ["com.afuerta.riftbound.RiftboundGameTests"]
   },
   "depends": {

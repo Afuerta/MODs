@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "convergence",
+  "version": "${version}",
+  "name": "Convergence: Threefold Expeditions",
+  "description": "Unite Riftbound, Copperwake and Starfall through 18 cross-world commissions, Convergence trials and practical expedition equipment.",
+  "authors": ["Afuerta"],
+  "contact": {"sources": "https://github.com/Afuerta/MODs"},
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {"main": ["com.afuerta.convergence.ConvergenceMod"]},
+  "depends": {
+    "fabricloader": ">=0.16.14", "minecraft": "~1.21.1", "java": ">=21", "fabric-api": "*",
+    "riftbound": ">=0.2.0", "copperwake": ">=0.1.0", "starfall": ">=0.2.0"
+  }
+}

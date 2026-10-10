@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "copperwake:arc_gauntlet"
+    },
+    "title": {
+      "translate": "advancement.copperwake.arc_welder.title"
+    },
+    "description": {
+      "translate": "advancement.copperwake.arc_welder.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "acquire": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "copperwake:arc_gauntlet"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "experience": 35
+  },
+  "parent": "copperwake:live_wire"
+}

@@ -1,0 +1,125 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import java.util.zip.ZipFile
+
+plugins { id 'base' }
+
+version = project.pack_version
+def packProjects = ['riftbound', 'copperwake', 'starfall', 'convergence']
+
+// Gradle reads only the root gradle.properties in a multi-project build. Load each
+// mod's own identity/version explicitly so its existing standalone build remains valid.
+subprojects { child ->
+    def propertiesFile = child.file('gradle.properties')
+    if (propertiesFile.exists()) {
+        def localProperties = new Properties()
+        propertiesFile.withInputStream { localProperties.load(it) }
+        localProperties.each { key, value ->
+            if (!key.startsWith('org.gradle.') && !key.startsWith('systemProp.')) {
+                child.extensions.extraProperties.set(key.toString(), value.toString())
+            }
+        }
+    }
+}
+
+// The bridge's headless run is also the pack integration run. Include the sibling
+// test mods as separate classpath groups; their real engine tests run in the same
+// server as Convergence rather than shipping inside any release jar.
+gradle.projectsEvaluated {
+    def bridge = project(':convergence')
+    packProjects.findAll { it != 'convergence' }.each { name ->
+        def sibling = project(":${name}")
+        def tests = sibling.extensions.findByName('sourceSets')?.findByName('gametest')
+        if (tests != null) {
+            bridge.dependencies.add('gametestRuntimeOnly', tests.output)
+            bridge.extensions.getByName('loom').mods.maybeCreate("${name}_test").sourceSet(tests, sibling)
+            bridge.tasks.named('runGameTest') { dependsOn sibling.tasks.named('gametestClasses') }
+        }
+    }
+}
+
+tasks.register('combinedGameTest') {
+    group = 'verification'
+    description = 'Run the four Fabric mods and their engine integration tests together.'
+    dependsOn ':convergence:runGameTest'
+}
+
+tasks.named('check') {
+    dependsOn packProjects.collect { ":${it}:check" }
+    dependsOn 'combinedGameTest'
+}
+
+tasks.register('generatePackManifest') {
+    group = 'distribution'
+    description = 'Record the exact four built jars and their SHA-256 checksums.'
+    dependsOn packProjects.collect { ":${it}:remapJar" }
+    def metadataDirectory = layout.buildDirectory.dir('generated/pack-metadata')
+    outputs.dir(metadataDirectory)
+    inputs.property('packVersion', project.version.toString())
+    packProjects.each { name ->
+        inputs.files(project(":${name}").tasks.named('remapJar').flatMap { it.archiveFile })
+        inputs.files(project(":${name}").sourceSets.findByName('gametest')?.allJava ?: [])
+    }
+    doLast {
+        def output = metadataDirectory.get().asFile
+        output.mkdirs()
+        def entries = packProjects.collect { name ->
+            def modProject = project(":${name}")
+            def modJar = modProject.tasks.named('remapJar').get().archiveFile.get().asFile
+            def testClassPrefixes = modProject.sourceSets.findByName('gametest')?.allJava?.files?.collect { source ->
+                def packageMatch = source.text =~ /(?m)^\s*package\s+([\w.]+)\s*;/
+                def packagePath = packageMatch.find() ? packageMatch.group(1).replace('.', '/') + '/' : ''
+                packagePath + source.name.replaceFirst(/\.java$/, '')
+            } ?: []
+            def metadata
+            new ZipFile(modJar).withCloseable { archive ->
+                def descriptor = archive.getEntry('fabric.mod.json')
+                if (descriptor == null) throw new GradleException("Missing Fabric descriptor: ${modJar.name}")
+                metadata = new JsonSlurper().parse(archive.getInputStream(descriptor))
+                if (metadata.id != name) throw new GradleException("Unexpected registry identity in ${modJar.name}: ${metadata.id}")
+                if (metadata.entrypoints?.containsKey('fabric-gametest') ||
+                        archive.entries().toList().any {
+                            it.name.contains('/gametest/') || it.name.contains('_test/') ||
+                                    testClassPrefixes.any { prefix ->
+                                        it.name == prefix + '.class' || it.name.startsWith(prefix + '$')
+                                    }
+                        }) {
+                    throw new GradleException("Test fixtures must not ship in ${modJar.name}")
+                }
+            }
+            def digest = MessageDigest.getInstance('SHA-256').digest(modJar.bytes).encodeHex().toString()
+            [id: metadata.id, version: metadata.version, file: "mods/${modJar.name}", sha256: digest,
+             sources: 'https://github.com/Afuerta/MODs']
+        }
+        def manifest = [formatVersion: 1, name: 'Convergence', version: project.version.toString(),
+                minecraft: project.minecraft_version,
+                loader: [id: 'fabric', version: project.loader_version,
+                         source: 'https://fabricmc.net/use/installer/', bundled: false],
+                externalRequirements: [[id: 'fabric-api', version: project.fabric_version,
+                        source: 'https://modrinth.com/mod/fabric-api', bundled: false]],
+                mods: entries]
+        new File(output, 'pack-manifest.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(manifest)) + '\n'
+        new File(output, 'SHA256SUMS').text = entries.collect { "${it.sha256}  ${it.file}" }.join('\n') + '\n'
+    }
+}
+
+tasks.register('modpack', Zip) {
+    group = 'distribution'
+    description = 'Package the four authored mods and installation instructions; Fabric API is external.'
+    dependsOn 'generatePackManifest'
+    archiveFileName = "convergence-${project.version}-fabric-${project.minecraft_version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    from('pack')
+    from('../docs/PLAY_GUIDE.md')
+    from(layout.buildDirectory.dir('generated/pack-metadata'))
+    packProjects.each { name ->
+        from(project(":${name}").tasks.named('remapJar').flatMap { it.archiveFile }) { into 'mods' }
+        from(project(":${name}").file('LICENSE')) { into "licenses/${name}" }
+    }
+}
+
+tasks.named('assemble') { dependsOn 'modpack' }
+tasks.named('build') { dependsOn packProjects.collect { ":${it}:build" } }

@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "copperwake:foreman_heart"
+    },
+    "title": {
+      "translate": "advancement.copperwake.end_of_shift.title"
+    },
+    "description": {
+      "translate": "advancement.copperwake.end_of_shift.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "acquire": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "copperwake:foreman_heart"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "experience": 150
+  },
+  "parent": "copperwake:calling_management"
+}

@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    "starfall:starstone",
+    "starfall:starstone_bricks",
+    "starfall:starstone_stairs",
+    "starfall:starstone_slab",
+    "starfall:starstone_wall",
+    "starfall:starstone_brick_stairs",
+    "starfall:starstone_brick_slab",
+    "starfall:starstone_brick_wall",
+    "starfall:polished_starstone_stairs",
+    "starfall:polished_starstone_slab",
+    "starfall:polished_starstone_wall",
+    "starfall:polished_starstone",
+    "starfall:chiseled_starstone"
+  ]
+}

@@ -1,6 +1,15 @@
 package com.afuerta.riftbound;
 
-import com.afuerta.riftbound.domain.*;
+import com.afuerta.riftbound.domain.Aspect;
+import com.afuerta.riftbound.domain.HazardSchedule;
+import com.afuerta.riftbound.domain.HazardZone;
+import com.afuerta.riftbound.domain.MobKind;
+import com.afuerta.riftbound.domain.TrialCooldowns;
+import com.afuerta.riftbound.domain.TrialPlan;
+import com.afuerta.riftbound.domain.TrialPlanner;
+import com.afuerta.riftbound.domain.TrialSession;
+import com.afuerta.riftbound.domain.TrialTier;
+import com.afuerta.riftbound.domain.WavePlan;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -12,7 +21,12 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,13 +38,28 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /** All encounter mutation runs on the logical server thread. No client packet can award loot. */
 public final class TrialManager {
     private static final int ARENA_RADIUS = 24;
     private static final int PARTY_RADIUS = 12;
     private static final int MAX_TRIALS = 4;
+    private static final int HAZARD_EFFECT_TICKS = 60;
+    private static final int HAZARD_PARTICLE_INTERVAL = 5;
+    private static final Identifier ATTUNEMENT_CORE = Identifier.of("convergence", "attunement_core");
+    private static final Identifier CONCORDANCE = Identifier.of("convergence", "concordance");
     private final Map<BlockPos, ActiveTrial> trials = new LinkedHashMap<>();
     private final Map<UUID, TrialTier> selections = new HashMap<>();
     private final Map<UUID, Long> readyUntil = new HashMap<>();
@@ -45,6 +74,9 @@ public final class TrialManager {
     private static long clock(MinecraftServer server) { return server.getOverworld().getTime(); }
     private static void tell(ServerPlayerEntity player, String message) {
         player.sendMessage(Text.literal("[Riftbound] " + message), false);
+    }
+    private static void translated(ServerPlayerEntity player, String key, Object... arguments) {
+        player.sendMessage(Text.translatable(key, arguments), false);
     }
     private static String label(Enum<?> value) {
         String s = value.name().toLowerCase(Locale.ROOT);
@@ -107,6 +139,14 @@ public final class TrialManager {
         if (PlayerProgress.completedTier(player) < tier.ordinal()) {
             tell(player, "Complete the preceding tier first."); return;
         }
+        boolean convergence = Registries.ITEM.getId(player.getOffHandStack().getItem()).equals(ATTUNEMENT_CORE);
+        if (convergence && tier == TrialTier.INITIATE) {
+            translated(player, "message.riftbound.convergence.requires_tier"); return;
+        }
+        Item concordance = convergence ? Registries.ITEM.get(CONCORDANCE) : Items.AIR;
+        if (convergence && concordance == Items.AIR) {
+            translated(player, "message.riftbound.convergence.unavailable"); return;
+        }
         if (offered.getCount() < tier.echoCost()) {
             tell(player, label(tier) + " requires " + tier.echoCost() + " Echoes of the same aspect."); return;
         }
@@ -125,14 +165,17 @@ public final class TrialManager {
             tell(player, "The arena is obstructed. Place the anchor on flat, dry ground with a clear 12-block radius."); return;
         }
         TrialSession session = new TrialSession(plan, party.stream().map(Entity::getUuid).toList(), now);
-        ActiveTrial active = new ActiveTrial(world, pos, session);
+        ActiveTrial active = new ActiveTrial(world, pos, session, convergence, concordance);
         party.forEach(p -> {
             readyUntil.remove(p.getUuid());
             active.bar.addPlayer(p);
             tell(p, label(tier) + " " + label(aspect) + " trial begins in 5 seconds. Stay within 24 blocks.");
+            if (convergence) translated(p, "message.riftbound.convergence.started");
         });
         trials.put(pos, active);
         offered.decrement(tier.echoCost());
+        // Both offerings are consumed only after every activation preflight succeeds.
+        if (convergence) player.getOffHandStack().decrement(1);
         world.playSound(null, pos, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, SoundCategory.BLOCKS, 1.0f, 1.1f);
     }
 
@@ -192,6 +235,12 @@ public final class TrialManager {
                 iterator.remove();
                 continue;
             }
+            tickHazards(trial, server, now);
+            if (trial.session.isTerminal()) {
+                finish(trial, server, now);
+                iterator.remove();
+                continue;
+            }
             if (now % 20 == 0) {
                 trial.bar.setName(Text.literal(label(trial.session.plan().aspect()) + " Rift · "
                         + label(trial.session.plan().tier()) + " · Wave "
@@ -207,6 +256,69 @@ public final class TrialManager {
                             1, 0, 0.15, 0, 0);
                 }
             }
+        }
+    }
+
+    private void tickHazards(ActiveTrial trial, MinecraftServer server, long now) {
+        if (trial.hazards == null) return;
+        int activeWave = trial.session.state() == TrialSession.State.ACTIVE ? trial.session.waveIndex() : -1;
+        HazardSchedule.Event event = trial.hazards.advance(now, activeWave);
+        if (activeWave < 0) { trial.zone = null; return; }
+        if (event == HazardSchedule.Event.WARNING) {
+            List<UUID> eligible = trial.session.eligibleParticipants().stream().sorted().toList();
+            ServerPlayerEntity focus = eligible.isEmpty() ? null : server.getPlayerManager()
+                    .getPlayer(eligible.get((trial.hazards.pulse() - 1) % eligible.size()));
+            double x = focus == null ? 0 : focus.getX() - trial.pos.getX() - .5;
+            double z = focus == null ? 0 : focus.getZ() - trial.pos.getZ() - .5;
+            trial.zone = HazardZone.create(trial.session.plan().aspect(), trial.session.plan().seed(),
+                    trial.hazards.pulse(), x, z);
+            for (UUID id : eligible) {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
+                if (player != null) translated(player, "message.riftbound.hazard."
+                        + trial.session.plan().aspect().name().toLowerCase(Locale.ROOT));
+            }
+            drawHazard(trial);
+        } else if (event == HazardSchedule.Event.IMPACT && trial.zone != null) {
+            // Snapshot avoids mutation during the death callbacks caused by hazard damage.
+            for (UUID id : trial.session.eligibleParticipants()) {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
+                if (player == null || !player.isAlive() || player.isCreative() || player.isSpectator()
+                        || player.getServerWorld() != trial.world
+                        || player.squaredDistanceTo(trial.pos.toCenterPos()) > ARENA_RADIUS * ARENA_RADIUS) continue;
+                if (!trial.zone.contains(player.getX() - trial.pos.getX() - .5,
+                        player.getZ() - trial.pos.getZ() - .5)) continue;
+                switch (trial.zone.aspect()) {
+                    case VERDANT -> player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                            HAZARD_EFFECT_TICKS, 1, false, true, true));
+                    case EMBER -> player.damage(trial.world.getDamageSources().magic(),
+                            trial.session.plan().tier() == TrialTier.ADEPT ? 3.0f : 4.0f);
+                    case TIDAL -> {
+                        Vec3d pull = trial.pos.toCenterPos().subtract(player.getPos());
+                        Vec3d horizontal = new Vec3d(pull.x, 0, pull.z).normalize().multiply(.55);
+                        player.addVelocity(horizontal.x, .08, horizontal.z);
+                        player.velocityModified = true;
+                    }
+                    case HOLLOW -> player.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS,
+                            HAZARD_EFFECT_TICKS, 0, false, true, true));
+                }
+            }
+            trial.zone = null;
+        } else if (trial.zone != null && trial.hazards.isWarning() && now % HAZARD_PARTICLE_INTERVAL == 0) {
+            drawHazard(trial);
+        }
+    }
+
+    private static void drawHazard(ActiveTrial trial) {
+        if (trial.zone == null) return;
+        var particle = switch (trial.zone.aspect()) {
+            case VERDANT -> ParticleTypes.HAPPY_VILLAGER;
+            case EMBER -> ParticleTypes.FLAME;
+            case TIDAL -> ParticleTypes.SPLASH;
+            case HOLLOW -> ParticleTypes.WITCH;
+        };
+        for (HazardZone.Point point : trial.zone.markers()) {
+            trial.world.spawnParticles(particle, trial.pos.getX() + .5 + point.x(), trial.pos.getY() + 1.15,
+                    trial.pos.getZ() + .5 + point.z(), 1, 0, .05, 0, 0);
         }
     }
 
@@ -327,10 +439,17 @@ public final class TrialManager {
         for (var reward : trial.session.claimRewards().entrySet()) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(reward.getKey());
             if (player == null) continue;
-            ItemStack shards = new ItemStack(RiftboundMod.RESONANCE, reward.getValue().resonanceShards());
+            int bonus = trial.convergence ? (trial.session.plan().tier() == TrialTier.ADEPT ? 2 : 3) : 0;
+            int totalShards = reward.getValue().resonanceShards() + bonus;
+            ItemStack shards = new ItemStack(RiftboundMod.RESONANCE, totalShards);
             if (!player.getInventory().insertStack(shards)) player.dropItem(shards, false);
+            if (trial.convergence) {
+                ItemStack concordance = new ItemStack(trial.concordance);
+                if (!player.getInventory().insertStack(concordance)) player.dropItem(concordance, false);
+                translated(player, "message.riftbound.convergence.reward", totalShards);
+            }
             PlayerProgress.complete(player, trial.session.plan().tier().ordinal() + 1);
-            tell(player, "Trial complete! +" + reward.getValue().resonanceShards()
+            tell(player, "Trial complete! +" + totalShards
                     + " Resonance Shards. Sneak-click the anchor empty-handed to select the next unlocked tier.");
         }
         for (UUID id : trial.session.participants()) {
@@ -345,6 +464,8 @@ public final class TrialManager {
     }
 
     private void cleanup(ActiveTrial trial) {
+        if (trial.hazards != null) trial.hazards.stop();
+        trial.zone = null;
         trial.bar.clearPlayers();
         for (UUID id : trial.allMobs) {
             managedMobs.remove(id);
@@ -389,10 +510,16 @@ public final class TrialManager {
         final BlockPos pos;
         final TrialSession session;
         final Set<UUID> allMobs = new HashSet<>();
+        final boolean convergence;
+        final Item concordance;
+        final HazardSchedule hazards;
+        HazardZone zone;
         final ServerBossBar bar = new ServerBossBar(Text.literal("Rift forming · prepare"),
                 BossBar.Color.PURPLE, BossBar.Style.PROGRESS);
-        ActiveTrial(ServerWorld world, BlockPos pos, TrialSession session) {
+        ActiveTrial(ServerWorld world, BlockPos pos, TrialSession session, boolean convergence, Item concordance) {
             this.world = world; this.pos = pos; this.session = session;
+            this.convergence = convergence; this.concordance = concordance;
+            this.hazards = convergence ? new HazardSchedule(session.plan().tier()) : null;
         }
     }
 }

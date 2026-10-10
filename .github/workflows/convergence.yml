@@ -1,0 +1,61 @@
+name: Convergence Fabric pack
+
+on:
+  push:
+    paths: ['minecraft/**', 'docs/PLAY_GUIDE.md', '.github/workflows/convergence.yml']
+  pull_request:
+    paths: ['minecraft/**', 'docs/PLAY_GUIDE.md', '.github/workflows/convergence.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convergence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+        working-directory: minecraft
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Validate authored resources
+        run: |
+          for mod in riftbound copperwake starfall convergence; do
+            if [ -f "$mod/tools/validate_resources.py" ]; then
+              (cd "$mod" && python3 tools/validate_resources.py)
+            fi
+          done
+      - name: Compile, run individual and combined engine tests, and package
+        run: |
+          set -o pipefail
+          mkdir -p build
+          bash ./gradlew --no-daemon --console=plain build combinedGameTest modpack 2>&1 | tee build/verification.log
+      - name: Upload verified pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: convergence-fabric-1.21.1
+          path: minecraft/build/distributions/*.zip
+          if-no-files-found: error
+      - name: Upload diagnostic server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: convergence-test-logs
+          path: |
+            minecraft/build/verification.log
+            minecraft/*/build/run/gameTest/logs/latest.log
+          if-no-files-found: ignore

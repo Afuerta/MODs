@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "starfall:starstone_wall",
+    "starfall:starstone_brick_wall",
+    "starfall:polished_starstone_wall"
+  ]
+}

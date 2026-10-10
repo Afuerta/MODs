@@ -1,0 +1,62 @@
+name: Starfall (NeoForge)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'starfall/**'
+      - '.github/workflows/starfall-neoforge.yml'
+  pull_request:
+    paths:
+      - 'starfall/**'
+      - '.github/workflows/starfall-neoforge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: starfall-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+        working-directory: starfall
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Pick Gradle (wrapper if present)
+        run: |
+          if [ -f gradlew ] && [ -f gradle/wrapper/gradle-wrapper.jar ]; then
+            chmod +x gradlew
+            echo "GRADLE=./gradlew" >> "$GITHUB_ENV"
+          else
+            echo "GRADLE=gradle" >> "$GITHUB_ENV"
+          fi
+
+      - name: Compile and package
+        run: $GRADLE build --stacktrace 2>&1 | tee ../build.log
+
+      - name: Run GameTests
+        run: $GRADLE runGameTestServer --stacktrace 2>&1 | tee ../gametest.log
+
+      - name: Upload mod jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: starfall-mod-jar
+          path: starfall/build/libs/*.jar
+          if-no-files-found: error

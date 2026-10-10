@@ -1,0 +1,74 @@
+// Fallen Star: 4 animation frames stacked vertically (16x64).
+// Animation settings live in assets/starfall/textures/block/fallen_star.png.mcmeta
+palette:
+a #3B2457
+b #8E3B6A
+c #E07A2E
+d #FFE79A
+e #FFF8DD
+f #FFC94A
+pixels:
+aaabccdeedccbaaa
+aabccfdeedfccbaa
+abcccffeeffcccba
+bccccffeeffccccb
+ccccffdeedffcccc
+cffffddeeddffffc
+ddffddeeeeddffdd
+eeeeeeeeeeeeeeee
+eeeeeeeeeeeeeeee
+ddffddeeeeddffdd
+cffffddeeddffffc
+ccccffdeedffcccc
+bccccffeeffccccb
+abcccffeeffcccba
+aabccfdeedfccbaa
+aaabccdeedccbaaa
+aabfddfccbbbaaaa
+aabfdedffcccbbaa
+abcfdeedffffccbb
+abcfdeedffffffff
+bcfffeeeffffdddd
+bcfffdeedddeeeed
+bcfffdeeeeeeeedf
+cffffdeeeeeeddfc
+cfddeeeeeedffffc
+fdeeeeeeeedfffcb
+deeeedddeedfffcb
+ddddffffeeefffcb
+ffffffffdeedfcba
+bbccffffdeedfcba
+aabbcccffdedfbaa
+aaaabbbccfddfbaa
+fffcbbbbbbbbcfff
+ffffccccccccffff
+ffdddffffffdddff
+cfdeeddddddeedfc
+bcdeeeddddeeedcb
+bcfdeeeddeeedfcb
+bcfddeeeeeeddfcb
+bcfdddeeeedddfcb
+bcfdddeeeedddfcb
+bcfddeeeeeeddfcb
+bcfdeeeddeeedfcb
+bcdeeeddddeeedcb
+cfdeeddddddeedfc
+ffdddffffffdddff
+ffffccccccccffff
+fffcbbbbbbbbcfff
+aabbbbbbcfddfcba
+bbbbbbcccdddfcba
+ccccccccfeedccbb
+ffcccfffdeefccbb
+dddffdddeeefccbb
+ddeeedeeeeddfcbb
+fdeeeeeeeeedfccb
+ccfdeeeeeeedfccb
+bccfdeeeeeeedfcc
+bccfdeeeeeeeeedf
+bbcfddeeeedeeedd
+bbccfeeedddffddd
+bbccfeedfffcccff
+bbccdeefcccccccc
+abcfdddcccbbbbbb
+abcfddfcbbbbbbaa

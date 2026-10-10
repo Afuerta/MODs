@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    " G ",
+    "GDG",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "D": {
+      "item": "starfall:stardust"
+    }
+  },
+  "result": {
+    "count": 2,
+    "id": "starfall:star_lantern"
+  }
+}

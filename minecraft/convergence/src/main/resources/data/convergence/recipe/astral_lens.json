@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "FSF",
+    "LCL",
+    "FTF"
+  ],
+  "key": {
+    "F": {
+      "item": "convergence:confluence_filament"
+    },
+    "S": {
+      "item": "starfall:starsteel_ingot"
+    },
+    "L": {
+      "item": "copperwake:memory_glass"
+    },
+    "C": {
+      "item": "convergence:concordance"
+    },
+    "T": {
+      "item": "convergence:tempered_focus"
+    }
+  },
+  "result": {
+    "id": "convergence:astral_lens",
+    "count": 1
+  }
+}
