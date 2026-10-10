@@ -9,6 +9,8 @@ Fabric edition uses the same content IDs and text pixel art as the original NeoF
 ## Playing
 
 - Watch for the falling-star direction message, then follow its particle trail.
+- Craft a **Star Compass** from a compass and four Star Shards. It points to the nearest
+  remembered Fallen Star in your current dimension and updates as you travel.
 - Mine Starstone Ore and Fallen Stars for Star Shards, Stardust and a chance of a Wishing Star.
   Fallen Stars hurt players who stand on them without sneaking.
 - Turn shards and iron into Starsteel. The five Starsteel tools gain mining and attack bonuses
@@ -32,6 +34,7 @@ Use one edition of Starfall in a modpack; the original project in `../../starfal
 
 | Result | Ingredients |
 |---|---|
+| Star Compass | 4 Star Shards surrounding a Compass (plus shape) |
 | 2 Stardust | 1 Star Shard |
 | Starsteel Ingot | 1 Iron Ingot + 4 Star Shards |
 | Starsteel tools | Standard tool shapes using Starsteel Ingots and sticks |
@@ -42,6 +45,21 @@ Use one edition of Starfall in a modpack; the original project in `../../starfal
 | Chiseled Starstone | 2 Starstone Slabs stacked vertically |
 | Stairs / slabs / walls | Standard building shapes or a stonecutter |
 | Star Shard | Smelt or blast Starstone Ore |
+
+## Star Compass
+
+Successful impacts are remembered across server restarts, with at most **64 positions per
+dimension**. The oldest recorded impact is forgotten when the limit is reached. Mining or
+replacing a Fallen Star removes its record; the compass retargets within one second. Existing
+stars from before this update are not automatically indexed.
+
+The compass points toward the nearest remembered star, including one in an unloaded chunk,
+without loading terrain. An unloaded target remains a remembered location until that area loads
+and can be checked. If no target exists in the current dimension, the needle spins and the
+tooltip says no star is remembered. Changing dimension clears the old dimension's target.
+Player-placed Fallen Stars do not create new impact records.
+
+[View the 32-direction compass artwork](docs/star-compass-frames.png).
 
 ## Commands
 

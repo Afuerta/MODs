@@ -73,5 +73,11 @@
   "advancement.starfall.starlit_arsenal.title": "Starlit Arsenal",
   "advancement.starfall.starlit_arsenal.description": "Collect all five Starsteel tools.",
   "advancement.starfall.heavenly_architect.title": "Heavenly Architect",
-  "advancement.starfall.heavenly_architect.description": "Collect Starstone stairs, a slab, a wall, polished stone and chiseled stone."
+  "advancement.starfall.heavenly_architect.description": "Collect Starstone stairs, a slab, a wall, polished stone and chiseled stone.",
+  "item.starfall.star_compass": "Star Compass",
+  "item.starfall.star_compass.tooltip": "Follows the nearest known Fallen Star in this dimension",
+  "item.starfall.star_compass.unbound": "No known Fallen Star in this dimension.",
+  "item.starfall.star_compass.target": "Fallen Star: %s, %s, %s",
+  "advancement.starfall.star_compass.title": "Follow Your Star",
+  "advancement.starfall.star_compass.description": "Craft a Star Compass to find fallen stars."
 }
