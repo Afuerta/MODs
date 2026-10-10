@@ -37,7 +37,7 @@ IDs (T01, T02, ...) are the reference.
 | T19 | JEI / EMI / Jade integration | 4 | M | T13, T03 | ChatGPT | blocked | |
 | T20 | Migrate JSON to data generators | 4 | L | T01–T07 merged | ChatGPT | blocked | |
 | T21 | Release pipeline (GitHub Releases on tag) | 4 | S | T00 | ChatGPT | ready | |
-| T23 | Fabric port + Convergence integration and expanded progression | Integration | XL | T00 | Codex + Astra | review | |
+| T23 | Fabric port + Convergence integration and expanded progression | Integration | XL | T00 | Codex + Astra | done | [PR #3](https://github.com/Afuerta/MODs/pull/3) |
 | T22 | Stardust fires NeoForge's bonemeal event | 1 | S | T00 | ChatGPT | ready | |
 
 Suggested order for ChatGPT: T01 → T02 → T03 → T06 → T04 → T07 → T05 → T08 → T09 → T11 → T13 →

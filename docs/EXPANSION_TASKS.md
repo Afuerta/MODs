@@ -1,6 +1,6 @@
 # Expansion task queue
 
-The current implementation is **T23: Convergence integration**, owned by Codex with Astra. It imports Copperwake, preserves the original Claude-authored Starfall source, ports Starfall to Fabric, expands each mod, and adds shared progression. Status: **review**. Implementation, full build, 45 combined GameTests and 10,696 domain checks pass; GitHub CI is the final merge check.
+The current implementation is **T23: Convergence integration**, owned by Codex with Astra. It imports Copperwake, preserves the original Claude-authored Starfall source, ports Starfall to Fabric, expands each mod, and adds shared progression. Status: **done**. Implementation, full build, 45 combined GameTests and 10,696 domain checks pass locally and in GitHub CI. The original NeoForge build and the individual Fabric checks also pass. See [PR #3](https://github.com/Afuerta/MODs/pull/3) and the [validation record](VALIDATION.md).
 
 Future tasks are scoped so several contributors can work independently. Claim a row and coordinate its owned paths before starting. Each task needs survival-obtainable recipes, translated guidance, applicable engine tests, and a focused pull request.
 

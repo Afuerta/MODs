@@ -2,6 +2,8 @@
 
 Recorded on 2026-10-10 with Java 21, Minecraft 1.21.1 and the pinned Fabric toolchain.
 
+GitHub CI independently passed on implementation commit `a4dcdbe7a3574fa1f52c1e88db967f8aad730ba8`: [combined PR build](https://github.com/Afuerta/MODs/actions/runs/38024871080), [Riftbound](https://github.com/Afuerta/MODs/actions/runs/38024871023), [Copperwake](https://github.com/Afuerta/MODs/actions/runs/38024871008), and [original NeoForge Starfall](https://github.com/Afuerta/MODs/actions/runs/38024871076). The verified GitHub pack is byte-identical to the local pack, SHA-256 `4a3a4589e6ca41272f86c2c3112c4eee20bd57feb869f7c7a1ceed5ee6e5ec86`.
+
 The complete root command `build combinedGameTest modpack` passed: **65 actionable tasks, BUILD SUCCESSFUL**. The combined server loaded all four production mods and their four separate test mods.
 
 | Check | Result |
