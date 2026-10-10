@@ -5,10 +5,10 @@
       "id": "starfall:starsteel_chestplate"
     },
     "title": {
-      "translate": "advancement.starfall.starlit_raiment.title"
+      "translate": "advancement.starfall.forged_in_starlight.title"
     },
     "description": {
-      "translate": "advancement.starfall.starlit_raiment.description"
+      "translate": "advancement.starfall.forged_in_starlight.description"
     },
     "frame": "goal",
     "show_toast": true,
@@ -16,7 +16,7 @@
     "hidden": false
   },
   "criteria": {
-    "starsteel_helmet": {
+    "helmet": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -26,7 +26,7 @@
         ]
       }
     },
-    "starsteel_chestplate": {
+    "chestplate": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -36,7 +36,7 @@
         ]
       }
     },
-    "starsteel_leggings": {
+    "leggings": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -46,7 +46,7 @@
         ]
       }
     },
-    "starsteel_boots": {
+    "boots": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -59,16 +59,16 @@
   },
   "requirements": [
     [
-      "starsteel_helmet"
+      "helmet"
     ],
     [
-      "starsteel_chestplate"
+      "chestplate"
     ],
     [
-      "starsteel_leggings"
+      "leggings"
     ],
     [
-      "starsteel_boots"
+      "boots"
     ]
   ],
   "rewards": {

@@ -1,4 +1,4 @@
-// Original Starfall expedition art.
+// Original Starsteel boots: icy metal, indigo shadows and gold star inlay.
 palette:
 a #1A1838
 b #EEF8FF
@@ -7,20 +7,21 @@ d #5A79B8
 e #FFE79A
 f #3A4A86
 g #8FB8E8
+h #B78B46
 pixels:
 ................
 ................
-................
-................
-...aaaa..aaaa...
-..agcca..accga..
-..accca..accca..
-..aceea..aeeca..
-..afcca..accfa..
-..afcca..accfa..
-.affcca..accffa.
-.affffa..affffa.
+..aaaa....aaaa..
+..aeha....aeha..
+..acga....acga..
+..acda....acda..
+..abda....abda..
+..acda....acda..
+.abecda..abecda.
+abccccdaabccccda
+abggggdaabggggda
+aheeehfa.aheehfa
+affffffaaffffffa
 .aaaaaa..aaaaaa.
-................
 ................
 ................

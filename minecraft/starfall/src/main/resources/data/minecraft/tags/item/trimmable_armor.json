@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "#starfall:starsteel_armor"
+    "starfall:starsteel_helmet",
+    "starfall:starsteel_chestplate",
+    "starfall:starsteel_leggings",
+    "starfall:starsteel_boots"
   ]
 }

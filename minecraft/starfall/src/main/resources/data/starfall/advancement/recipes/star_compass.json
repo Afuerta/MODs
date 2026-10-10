@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_starsteel": {
+    "has_star_shard": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "starfall:starsteel_ingot"
+            "items": "starfall:star_shard"
           }
         ]
       }
@@ -14,19 +14,19 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "starfall:starsteel_boots"
+        "recipe": "starfall:star_compass"
       }
     }
   },
   "requirements": [
     [
-      "has_starsteel",
+      "has_star_shard",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "starfall:starsteel_boots"
+      "starfall:star_compass"
     ]
   }
 }

@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import io.github.afuerta.starfall.event.FallingStarManager;
 import io.github.afuerta.starfall.event.ProtectedTerrain;
 import io.github.afuerta.starfall.event.StarImpact;
+import io.github.afuerta.starfall.event.StarImpactData;
 import io.github.afuerta.starfall.item.StardustItem;
 import io.github.afuerta.starfall.item.WishingStarItem;
 import io.github.afuerta.starfall.registry.ModBlocks;
@@ -44,7 +45,7 @@ public final class StarfallGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void originalAndExpandedRegistriesAndRecipesLoad(TestContext context) {
         context.assertEquals(17, ModBlocks.ALL.size(), "Expected six original and eleven expanded blocks");
-        context.assertEquals(31, ModItems.ALL.size(), "Expected original materials/tools, expedition gear and every block item");
+        context.assertEquals(31, ModItems.ALL.size(), "Expected original materials/tools, star compass, four armor pieces and every block item");
         for (String name : ModBlocks.ALL.keySet()) {
             context.assertTrue(Registries.BLOCK.containsId(Starfall.id(name)), "Missing block " + name);
             context.assertTrue(Registries.ITEM.containsId(Starfall.id(name)), "Missing block item " + name);
@@ -55,7 +56,7 @@ public final class StarfallGameTests implements FabricGameTest {
                 "starsteel_sword", "starsteel_pickaxe", "starsteel_axe", "starsteel_shovel", "starsteel_hoe",
                 "starstone_stairs", "starstone_slab", "starstone_wall", "starstone_brick_stairs", "starstone_brick_slab",
                 "starstone_brick_wall", "polished_starstone", "polished_starstone_stairs", "polished_starstone_slab",
-                "polished_starstone_wall", "chiseled_starstone")) {
+                "polished_starstone_wall", "chiseled_starstone", "star_compass")) {
             var recipe = recipes.get(Starfall.id(name));
             context.assertTrue(recipe.isPresent(), "Recipe did not decode: " + name);
             context.assertTrue(recipe.orElseThrow().value().getResult(context.getWorld().getRegistryManager())
@@ -74,6 +75,10 @@ public final class StarfallGameTests implements FabricGameTest {
         context.assertTrue(context.getWorld().getBlockState(star.down()).isOf(ModBlocks.STARSTONE)
                 || context.getWorld().getBlockState(star.down()).isOf(ModBlocks.STARSTONE_ORE), "Missing crater floor");
         context.assertTrue(context.getWorld().getBlockState(ground.add(1, 0, 0)).isAir(), "Crater was not carved");
+        var impacts = StarImpactData.get(context.getWorld());
+        context.assertTrue(impacts.entries().stream().anyMatch(entry -> entry.position().equals(star)),
+                "A successful impact did not register its fallen star for compass discovery");
+        impacts.remove(star);
         context.complete();
     }
 
@@ -81,11 +86,14 @@ public final class StarfallGameTests implements FabricGameTest {
     public void constructedBlocksAndBlockEntitiesAbortWholeImpact(TestContext context) {
         BlockPos ground = naturalGround(context);
         BlockPos obstruction = ground.add(1, 1, 0);
+        var impacts = StarImpactData.get(context.getWorld());
+        var previousEntries = impacts.entries();
         for (Block protectedBlock : List.of(Blocks.OAK_PLANKS, Blocks.CHEST, Blocks.BEDROCK, Blocks.WATER)) {
             context.getWorld().setBlockState(obstruction, protectedBlock.getDefaultState());
             context.assertTrue(StarImpact.impact(context.getWorld(), ground, 2) == null, "Unsafe impact was accepted: " + protectedBlock);
             context.assertTrue(context.getWorld().getBlockState(ground).isOf(Blocks.GRASS_BLOCK), "Rejected impact partially carved terrain");
             context.assertTrue(context.getWorld().getBlockState(obstruction).isOf(protectedBlock), "Protected block was altered");
+            context.assertEquals(previousEntries, impacts.entries(), "Rejected impact changed remembered stars");
         }
         context.complete();
     }

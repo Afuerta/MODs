@@ -1,10 +1,10 @@
 package io.github.afuerta.starfall.registry;
 
 import io.github.afuerta.starfall.Starfall;
-import io.github.afuerta.starfall.item.StardustItem;
-import io.github.afuerta.starfall.item.WishingStarItem;
 import io.github.afuerta.starfall.item.StarCompassItem;
+import io.github.afuerta.starfall.item.StardustItem;
 import io.github.afuerta.starfall.item.StarsteelArmorItem;
+import io.github.afuerta.starfall.item.WishingStarItem;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.BlockItem;
@@ -29,6 +29,8 @@ public final class ModItems {
     public static final Item STAR_SHARD = item("star_shard", new Item(new Item.Settings()));
     public static final Item STARDUST = item("stardust", new StardustItem(new Item.Settings()));
     public static final Item STARSTEEL_INGOT = item("starsteel_ingot", new Item(new Item.Settings()));
+    public static final StarCompassItem STAR_COMPASS = item("star_compass", new StarCompassItem(
+            new Item.Settings().maxCount(1).rarity(Rarity.UNCOMMON)));
     public static final Item WISHING_STAR = item("wishing_star", new WishingStarItem(
             new Item.Settings().maxCount(16).rarity(Rarity.RARE)));
     public static final SwordItem STARSTEEL_SWORD = item("starsteel_sword", new SwordItem(ModTiers.STARSTEEL,
@@ -41,12 +43,14 @@ public final class ModItems {
             new Item.Settings().attributeModifiers(MiningToolItem.createAttributeModifiers(ModTiers.STARSTEEL, 1.5F, -3F))));
     public static final HoeItem STARSTEEL_HOE = item("starsteel_hoe", new HoeItem(ModTiers.STARSTEEL,
             new Item.Settings().attributeModifiers(MiningToolItem.createAttributeModifiers(ModTiers.STARSTEEL, -3, 0))));
-    public static final StarCompassItem STAR_COMPASS = item("star_compass", new StarCompassItem(
-            new Item.Settings().maxCount(1).rarity(Rarity.UNCOMMON)));
-    public static final ArmorItem STARSTEEL_HELMET = item("starsteel_helmet", new StarsteelArmorItem(ArmorItem.Type.HELMET));
-    public static final ArmorItem STARSTEEL_CHESTPLATE = item("starsteel_chestplate", new StarsteelArmorItem(ArmorItem.Type.CHESTPLATE));
-    public static final ArmorItem STARSTEEL_LEGGINGS = item("starsteel_leggings", new StarsteelArmorItem(ArmorItem.Type.LEGGINGS));
-    public static final ArmorItem STARSTEEL_BOOTS = item("starsteel_boots", new StarsteelArmorItem(ArmorItem.Type.BOOTS));
+    public static final ArmorItem STARSTEEL_HELMET = item("starsteel_helmet", new StarsteelArmorItem(
+            ArmorItem.Type.HELMET, new Item.Settings()));
+    public static final ArmorItem STARSTEEL_CHESTPLATE = item("starsteel_chestplate", new StarsteelArmorItem(
+            ArmorItem.Type.CHESTPLATE, new Item.Settings()));
+    public static final ArmorItem STARSTEEL_LEGGINGS = item("starsteel_leggings", new StarsteelArmorItem(
+            ArmorItem.Type.LEGGINGS, new Item.Settings()));
+    public static final ArmorItem STARSTEEL_BOOTS = item("starsteel_boots", new StarsteelArmorItem(
+            ArmorItem.Type.BOOTS, new Item.Settings()));
     static {
         ModBlocks.ALL.forEach((path, block) -> item(path, new BlockItem(block, new Item.Settings())));
     }

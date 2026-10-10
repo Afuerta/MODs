@@ -9,26 +9,19 @@ Fabric edition uses the same content IDs and text pixel art as the original NeoF
 ## Playing
 
 - Watch for the falling-star direction message, then follow its particle trail.
+- Craft a **Star Compass** from a compass and four Star Shards. It points to the nearest
+  remembered Fallen Star in your current dimension and updates as you travel.
 - Mine Starstone Ore and Fallen Stars for Star Shards, Stardust and a chance of a Wishing Star.
   Fallen Stars hurt players who stand on them without sneaking.
 - Turn shards and iron into Starsteel. The five Starsteel tools gain mining and attack bonuses
   under a clear night sky.
-- Craft a **Star Compass** after forging Starsteel. Use it to read the nearest recorded Fallen
-  Star's coordinates and distance; its needle refreshes once a second while held. The chart
-  remembers the newest **64 successful impacts per dimension**, survives a restart, and removes
-  stars when they are mined or replaced. A distant, unloaded target remains a memory until its
-  chunk is already loaded, when missing stars are discarded. The compass never loads terrain.
-- Forge all four **Starsteel armor pieces**: 19 armor points, four total toughness, enchantability
-  18 and durability 330 / 480 / 450 / 390 (helmet / chestplate / leggings / boots). Repair them with
-  Starsteel Ingots, enchant them normally, and apply vanilla armor trims. A full set gives **10%
-  movement speed and 0.10 knockback resistance** under an open, clear Overworld night sky. The bonus
-  stops on the next server tick when a piece is removed, daylight/weather/sky changes, or the wearer
-  dies or becomes a spectator. It grants no damage immunity or persistent status effects.
+- Forge a full **Starsteel armor** set to gain Night Vision and fall protection while Starlit.
+  Each piece uses normal armor crafting, enchanting, trimming and Starsteel Ingot repairs.
 - Use Stardust on crops for two growth pulses, or consume a Wishing Star for a temporary blessing.
 - Turn crater stone into **11 building variants**: Starstone and Starstone Brick stairs, slabs
   and walls; Polished Starstone with stairs, slabs and walls; and Chiseled Starstone.
   Use a crafting table or stonecutter. Slabs yield two per stonecutting input.
-- Follow seven progression advancements from your first shard through a full Starsteel arsenal and a
+- Follow seven visible advancements from your first shard through a full Starsteel arsenal and a
   collection of celestial building materials.
 - Meteor showers increase the star rate for one night, with a configurable impact limit.
 
@@ -43,11 +36,11 @@ Use one edition of Starfall in a modpack; the original project in `../../starfal
 
 | Result | Ingredients |
 |---|---|
+| Star Compass | 4 Star Shards surrounding a Compass (plus shape) |
 | 2 Stardust | 1 Star Shard |
 | Starsteel Ingot | 1 Iron Ingot + 4 Star Shards |
 | Starsteel tools | Standard tool shapes using Starsteel Ingots and sticks |
-| Star Compass | Compass in the center, Starsteel Ingots above/below, Star Shards left/right |
-| Starsteel armor | Standard armor shapes; 24 Starsteel Ingots for the complete set |
+| Starsteel armor | Standard armor shapes; 5 / 8 / 7 / 4 Starsteel Ingots |
 | Wishing Star | 8 Stardust surrounding a Gold Ingot |
 | 2 Star Lanterns | Glass in a plus shape around Stardust |
 | 4 Starstone Bricks | 4 Starstone in a square |
@@ -55,6 +48,52 @@ Use one edition of Starfall in a modpack; the original project in `../../starfal
 | Chiseled Starstone | 2 Starstone Slabs stacked vertically |
 | Stairs / slabs / walls | Standard building shapes or a stonecutter |
 | Star Shard | Smelt or blast Starstone Ore |
+
+## Star Compass
+
+Successful impacts are remembered across server restarts, with at most **64 positions per
+dimension**. The oldest recorded impact is forgotten when the limit is reached. Mining or
+replacing a Fallen Star removes its record; the compass retargets within one second. Existing
+stars from before this update are not automatically indexed. The recipe unlocks when you obtain
+a Star Shard, including in worlds where the first-shard advancement was already completed.
+
+The compass points toward the nearest remembered star, including one in an unloaded chunk,
+without loading terrain. An unloaded target remains a remembered location until that area loads
+and can be checked. If no target exists in the current dimension, the needle spins and the
+tooltip says no star is remembered. Changing dimension clears the old dimension's target.
+Player-placed Fallen Stars do not create new impact records.
+Positions outside the current world border or build limits are pruned before any chunk lookup;
+a shrinking border cannot leave the compass pointing toward an unreachable recorded star.
+
+[View the 32-direction compass artwork](docs/star-compass-frames.png).
+
+## Starsteel armor
+
+[View the original armor artwork and texture layout](docs/starsteel-armor.png).
+
+Forge all four pieces with **24 Starsteel Ingots** total (96 Star Shards and 24 Iron Ingots).
+Obtaining an ingot unlocks the four recipes, including for players with existing advancement
+progress. Equip the complete set in its armor slots; pieces held in your hand do not count.
+
+| Piece | Ingots | Armor points | Durability |
+|---|---:|---:|---:|
+| Helmet | 5 | 3 | 297 |
+| Chestplate | 8 | 7 | 432 |
+| Leggings | 7 | 6 | 405 |
+| Boots | 4 | 3 | 351 |
+
+The complete set gives **19 armor points and 4 toughness**. Each piece has enchantability 18
+and repairs with Starsteel Ingots. Vanilla armor enchantments and armor trims are supported.
+
+**Starlit set bonus:** wear all four pieces outside under a clear Overworld sky between
+13,000 and 23,000 world-time ticks. Night Vision refreshes once per second without flickering.
+Fall-type damage, including landing on pointed dripstone, is prevented while the conditions
+hold. The set does not prevent fire, melee, projectile or void damage.
+
+Removing a piece, moving under cover, rain, dawn or leaving the Overworld ends fall protection
+immediately. Night Vision naturally fades within 13 seconds; longer, stronger and infinite
+effects from potions or other mods are preserved. This avoids deleting another source's effect.
+Collecting all four pieces earns **Forged in Starlight** and 50 XP once.
 
 ## Commands
 
@@ -92,14 +131,8 @@ farmland and modded blocks, so many wooded or built areas will not receive stars
 A star takes two seconds to land and repeats the complete safety check at impact. A blocked star
 fades without damage. Meteor flight, shower selection and the per-night launch budget reset on a
 server restart. At most eight stars can be in flight, and the night budget includes operator summons.
-Clear-night bonuses require open sky and apply to mining plus the primary vanilla melee strike.
+The Starsteel tool bonuses require open sky and apply to mining plus the primary vanilla melee strike.
 They do not increase projectiles, sweep strikes or damage from other mods such as an Arc Gauntlet.
-
-The compass records impacts created **after this update**; existing v0.2 Fallen Stars and stars
-placed by players are intentionally absent from the chart. The mod does not scan old terrain.
-Changing dimension selects that dimension's chart; a dimension with no recorded stars gives an
-empty, spinning needle. Natural impacts occur in the Overworld. Forgotten stars remain mineable;
-the 64-record cap limits discovery memory rather than deleting blocks or loot.
 
 ## Building and resource checks
 
@@ -114,8 +147,7 @@ contact sheet, install Pillow and run `python3 tools/px_render.py`.
 
 ## Verified behavior
 
-The Fabric 1.21.1 dedicated headless server passed **all 18 Starfall GameTests**, and the complete
-Starfall build passed. The original tests cover the 17-block/31-item registry,
+Starfall has **27 dedicated-server GameTests** for the 17-block/31-item registry,
 recipe outputs, safe crater placement, constructed blocks/block entities/fluids/bedrock, unloaded
 terrain and the world border, compact persisted protection columns, two-pulse Stardust growth,
 wish consumption and cooldown, clear-night mining and actual melee bonuses, unamplified mod
@@ -123,15 +155,19 @@ attributed damage, Fallen Star loot/Silk Touch, bounded config, shower restricti
 limits, and construction placed during a meteor's flight. Tests live in `src/gametest` and are
 excluded from the released mod jar.
 
-Six expedition tests cover bounded 64-record NBT persistence (including negative coordinates,
-duplicates and oversized saves), loaded stale-target removal, unloaded targets without chunk
-loads, intentional legacy-star exclusion, rejected/successful impact recording, actual mining
-removal and automatic inventory-tick reselection, vanilla compass component save/load and dimension
-changes, armor recipes/discovery/repair/enchantment tags, and non-stacking set bonuses that stop on
-equipment, daylight, rain, thunder, roof, spectator and death changes. This verifies save/load formats
-and dedicated-server class loading; it does not claim a human client session or a literal process restart.
+The seven Star Compass tests verify nearest selection, duplicate/cap eviction, save/reload through
+a fresh world state manager, malformed saved entries, missing and unloaded targets, scheduled
+inventory updates, dimension changes and shrinking-border/build-limit pruning without target loads.
+The existing impact tests also verify that successful
+landings are recorded and rejected impacts leave the index unchanged.
 
-The resource validator passes **227 JSON resources and 55 text textures**, including all 11
-building variants, seven progression advancements, five recipe discoveries, 32 original compass
-needle frames, and both 64×32 humanoid armor layers. Texture previews were rendered and visually checked.
+Eight Starsteel armor tests cover real shaped crafting and costs, material stats, repair and
+enchantment tags, exact equipment slots, night boundaries, weather/roof/dimension exclusions,
+longer/stronger/infinite potions, actual fall and ordinary damage, registered server tick events,
+and the natural expiry of Night Vision after equipment removal.
+
+The resource validator passes **272 JSON resources and 55 text textures**, including all 11
+building variants, seven visible advancements and five hidden recipe unlocks. Texture previews were rendered and visually checked.
 Desktop/client playtesting has not been performed in this headless environment.
+Current pack verification is recorded in [the shared validation record](../../docs/VALIDATION.md);
+earlier independent C02/C03 results are preserved in [their historical record](../../docs/VALIDATION-C02-C03.md).

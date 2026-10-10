@@ -15,7 +15,7 @@ The Fabric suite uses Minecraft 1.21.1 and Java 21. `minecraft/README.md` lists 
 3. Check failed trial activation and incomplete delivery costs. Repeating a completion or command must never award a second reward for the same action.
 4. Play an ordinary Rift trial and an attuned Adept/Exalted trial in a party. Verify warnings, late entrants, withdrawal, death, cleanup and progress.
 5. Audit every contract requirement against obtainable survival items and prior progression. Rewards must not reproduce the full materials needed for their own repeating delivery.
-6. Test the Star Compass with a mined target, an unloaded target, a dimension change and a normal restart. The index keeps 64 records per dimension and never loads remote terrain.
+6. Test the Star Compass with a mined target, an unloaded target, a dimension change and a normal restart. The index keeps 64 records per dimension in the published `starfall_impacts` format and never loads remote terrain. Test a changed world border too. The full Starsteel set grants clear-night Night Vision and immediate fall protection; Ember magic and Tidal pushes remain effective.
 7. Try the Astral Infuser's actual UI, input changes, full outputs, side insertion, bottom extraction, roof/weather pauses and ordinary restart. All four formulas retain earned Concordance and catalyst gates.
 8. Play the two new Rustwild landmarks and locate all five naturally. Their templates are one-piece structures with positive jigsaw depth; the previous zero-depth settings decoded without producing natural pieces.
 

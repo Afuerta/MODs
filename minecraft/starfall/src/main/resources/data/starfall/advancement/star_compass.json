@@ -1,5 +1,5 @@
 {
-  "parent": "starfall:starsteel",
+  "parent": "starfall:first_shard",
   "display": {
     "icon": {
       "id": "starfall:star_compass"
@@ -33,6 +33,6 @@
     ]
   ],
   "rewards": {
-    "experience": 20
+    "experience": 10
   }
 }

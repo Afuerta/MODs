@@ -5,15 +5,19 @@ import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import java.util.List;
 
+/** Vanilla armor, repair and equipping behavior with a shared explanation of the full-set bonus. */
 public final class StarsteelArmorItem extends ArmorItem {
-    public StarsteelArmorItem(Type type) {
+    public StarsteelArmorItem(Type type, Settings settings) {
         super(ModArmorMaterials.STARSTEEL, type,
-                new Settings().maxDamage(type.getMaxDamage(ModArmorMaterials.DURABILITY_MULTIPLIER)));
+                settings.maxDamage(type.getMaxDamage(ModArmorMaterials.STARSTEEL_DURABILITY_MULTIPLIER)));
     }
+
     @Override public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("tooltip.starfall.starsteel_armor"));
-        tooltip.add(Text.translatable("tooltip.starfall.starsteel_armor_conditions"));
+        super.appendTooltip(stack, context, tooltip, type);
+        tooltip.add(Text.translatable("item.starfall.starsteel_armor.bonus").formatted(Formatting.AQUA));
+        tooltip.add(Text.translatable("item.starfall.starsteel_armor.tooltip").formatted(Formatting.GRAY));
     }
 }

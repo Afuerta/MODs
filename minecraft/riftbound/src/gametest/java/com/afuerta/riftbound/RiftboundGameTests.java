@@ -531,31 +531,44 @@ public final class RiftboundGameTests implements FabricGameTest {
         if (aspect == Aspect.TIDAL) {
             player.refreshPositionAndAngles(anchor.getX() + 10.5, anchor.getY(), anchor.getZ() + .5, 0, 0);
         }
+        Runnable restoreStarsteelSky = aspect == Aspect.TIDAL ? equipOptionalStarsteel(context, List.of(player)) : null;
         player.setStackInHand(Hand.OFF_HAND, new ItemStack(convergenceItem("attunement_core")));
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(RiftboundMod.ECHOES.get(aspect), 2));
         RiftboundMod.TRIALS.useAnchor(player, anchor);
         AtomicLong firstCombatTick = new AtomicLong(-1);
         AtomicBoolean finished = new AtomicBoolean();
         context.runAtEveryTick(() -> {
-            if (finished.get()) return;
-            long now = context.getWorld().getTime();
-            for (MobEntity mob : trialMobs(context, anchor)) {
-                mob.setAiDisabled(true);
-                firstCombatTick.compareAndSet(-1, now);
+            try {
+                if (finished.get()) return;
+                long now = context.getWorld().getTime();
+                for (MobEntity mob : trialMobs(context, anchor)) {
+                    mob.setAiDisabled(true);
+                    firstCombatTick.compareAndSet(-1, now);
+                }
+                if (firstCombatTick.get() < 0) return;
+                long elapsed = now - firstCombatTick.get();
+                if (elapsed < 119) context.assertFalse(impacted.test(player), "Adept hazard ignored its full warning");
+                if (!impacted.test(player)) return;
+                if (restoreStarsteelSky != null) assertStarsteelActive(context, player);
+                finished.set(true);
+                RiftboundMod.TRIALS.cancel(player);
+                context.waitAndRun(3, () -> {
+                    try {
+                        context.assertEquals(0, trialMobs(context, anchor).size(), "Hazard encounter did not clean up");
+                        context.assertEquals(0, count(player, convergenceItem("concordance")), "Cancelled hazard encounter gave rewards");
+                    } finally {
+                        removePlayer(context, player);
+                        if (restoreStarsteelSky != null) restoreStarsteelSky.run();
+                    }
+                    context.complete();
+                });
+            } catch (RuntimeException | Error failure) {
+                finished.set(true);
+                RiftboundMod.TRIALS.cancel(player);
+                removePlayer(context, player);
+                if (restoreStarsteelSky != null) restoreStarsteelSky.run();
+                throw failure;
             }
-            if (firstCombatTick.get() < 0) return;
-            long elapsed = now - firstCombatTick.get();
-            if (elapsed < 119) context.assertFalse(impacted.test(player), "Adept hazard ignored its full warning");
-            if (!impacted.test(player)) return;
-            finished.set(true);
-            RiftboundMod.TRIALS.cancel(player);
-            context.waitAndRun(3, () -> {
-                try {
-                    context.assertEquals(0, trialMobs(context, anchor).size(), "Hazard encounter did not clean up");
-                    context.assertEquals(0, count(player, convergenceItem("concordance")), "Cancelled hazard encounter gave rewards");
-                } finally { removePlayer(context, player); }
-                context.complete();
-            });
         });
     }
 
@@ -566,6 +579,7 @@ public final class RiftboundGameTests implements FabricGameTest {
         var second = createSurvivalServerPlayer(context);
         first.getAbilities().invulnerable = false;
         second.refreshPositionAndAngles(first.getX(), first.getY(), first.getZ(), 0, 0);
+        Runnable restoreStarsteelSky = equipOptionalStarsteel(context, List.of(first, second));
         // At every lane rotation, at least one of these perpendicular seven-block offsets is marked.
         for (var player : List.of(first, second)) {
             player.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
@@ -580,40 +594,107 @@ public final class RiftboundGameTests implements FabricGameTest {
         AtomicLong firstCombatTick = new AtomicLong(-1);
         AtomicBoolean finished = new AtomicBoolean();
         context.runAtEveryTick(() -> {
-            if (finished.get()) return;
-            long now = context.getWorld().getTime();
-            // Other modules' tests can leave ordinary mobs in the shared test world.
-            // Isolate this damage assertion from their AI as well as trial enemy attacks.
-            context.getWorld().getEntitiesByType(TypeFilter.instanceOf(MobEntity.class), mob ->
-                    mob.squaredDistanceTo(anchor.toCenterPos()) < 40 * 40).forEach(mob -> mob.setAiDisabled(true));
-            for (MobEntity mob : trialMobs(context, anchor)) {
-                mob.setAiDisabled(true);
-                if (firstCombatTick.compareAndSet(-1, now)) {
-                    // Position after the first wave is frozen so a newly spawned husk
-                    // cannot take a melee swing before the test's first AI-disable tick.
-                    first.refreshPositionAndAngles(anchor.getX() + 7.5, anchor.getY(), anchor.getZ() + .5, 0, 0);
-                    second.refreshPositionAndAngles(anchor.getX() + .5, anchor.getY(), anchor.getZ() + 7.5, 0, 0);
+            try {
+                if (finished.get()) return;
+                long now = context.getWorld().getTime();
+                // Other modules' tests can leave ordinary mobs in the shared test world.
+                // Isolate this damage assertion from their AI as well as trial enemy attacks.
+                context.getWorld().getEntitiesByType(TypeFilter.instanceOf(MobEntity.class), mob ->
+                        mob.squaredDistanceTo(anchor.toCenterPos()) < 40 * 40).forEach(mob -> mob.setAiDisabled(true));
+                for (MobEntity mob : trialMobs(context, anchor)) {
+                    mob.setAiDisabled(true);
+                    if (firstCombatTick.compareAndSet(-1, now)) {
+                        // Position after the first wave is frozen so a newly spawned husk
+                        // cannot take a melee swing before the test's first AI-disable tick.
+                        first.refreshPositionAndAngles(anchor.getX() + 7.5, anchor.getY(), anchor.getZ() + .5, 0, 0);
+                        second.refreshPositionAndAngles(anchor.getX() + .5, anchor.getY(), anchor.getZ() + 7.5, 0, 0);
+                        if (restoreStarsteelSky != null) {
+                            openSkyAbove(context, first);
+                            openSkyAbove(context, second);
+                        }
+                    }
                 }
+                if (firstCombatTick.get() < 0) return;
+                float health = first.getHealth() + second.getHealth();
+                long elapsed = now - firstCombatTick.get();
+                if (elapsed < 119) context.assertTrue(health == 40, "Ember damaged players before its full warning");
+                if (health == 40) return;
+                if (restoreStarsteelSky != null) {
+                    assertStarsteelActive(context, first);
+                    assertStarsteelActive(context, second);
+                }
+                finished.set(true);
+                context.assertTrue(health == 37 || health == 34, "Adept Ember pulse did not deal exactly three HP per marked participant");
+                context.assertTrue(first.hasStatusEffect(net.minecraft.entity.effect.StatusEffects.FIRE_RESISTANCE),
+                        "Test lost Fire Resistance before the impact");
+                RiftboundMod.TRIALS.cancel(first);
+                RiftboundMod.TRIALS.cancel(second);
+                context.waitAndRun(3, () -> {
+                    try {
+                        context.assertEquals(0, trialMobs(context, anchor).size(), "Ember party did not clean up after withdrawal");
+                    } finally {
+                        removePlayer(context, first); removePlayer(context, second);
+                        if (restoreStarsteelSky != null) restoreStarsteelSky.run();
+                    }
+                    context.complete();
+                });
+            } catch (RuntimeException | Error failure) {
+                finished.set(true);
+                RiftboundMod.TRIALS.cancel(first); RiftboundMod.TRIALS.cancel(second);
+                removePlayer(context, first); removePlayer(context, second);
+                if (restoreStarsteelSky != null) restoreStarsteelSky.run();
+                throw failure;
             }
-            if (firstCombatTick.get() < 0) return;
-            float health = first.getHealth() + second.getHealth();
-            long elapsed = now - firstCombatTick.get();
-            if (elapsed < 119) context.assertTrue(health == 40, "Ember damaged players before its full warning");
-            if (health == 40) return;
-            finished.set(true);
-            context.assertTrue(health == 37 || health == 34, "Adept Ember pulse did not deal exactly three HP per marked participant");
-            context.assertTrue(first.hasStatusEffect(net.minecraft.entity.effect.StatusEffects.FIRE_RESISTANCE),
-                    "Test lost Fire Resistance before the impact");
-            RiftboundMod.TRIALS.cancel(first);
-            RiftboundMod.TRIALS.cancel(second);
-            context.waitAndRun(3, () -> {
-                try {
-                    context.assertEquals(0, trialMobs(context, anchor).size(), "Ember party did not clean up after withdrawal");
-                } finally { removePlayer(context, first); removePlayer(context, second); }
-                context.complete();
-            });
         });
     }
+
+    /** Registry-only integration keeps standalone Riftbound free of a Starfall test dependency. */
+    private static Runnable equipOptionalStarsteel(TestContext context, List<ServerPlayerEntity> players) {
+        if (!Registries.ITEM.containsId(Identifier.of("starfall", "starsteel_helmet"))) return null;
+        var pieces = List.of("starsteel_helmet", "starsteel_chestplate", "starsteel_leggings", "starsteel_boots");
+        var slots = List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET);
+        for (int i = 0; i < pieces.size(); i++) {
+            var id = Identifier.of("starfall", pieces.get(i));
+            context.assertTrue(Registries.ITEM.containsId(id), "Incomplete Starsteel integration fixture: " + id);
+            for (var player : players) player.equipStack(slots.get(i), new ItemStack(Registries.ITEM.get(id)));
+        }
+        var world = context.getWorld();
+        long previousTime = world.getTimeOfDay();
+        boolean previousRain = world.isRaining(), previousThunder = world.isThundering();
+        world.setTimeOfDay(18000);
+        world.setWeather(6000, 0, false, false);
+        world.setRainGradient(0); world.setThunderGradient(0);
+        for (var player : players) openSkyAbove(context, player);
+        return () -> {
+            world.setTimeOfDay(previousTime);
+            world.setWeather(0, 0, previousRain, previousThunder);
+            world.setRainGradient(previousRain ? 1 : 0); world.setThunderGradient(previousThunder ? 1 : 0);
+        };
+    }
+
+    private static void openSkyAbove(TestContext context, ServerPlayerEntity player) {
+        var world = context.getWorld();
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            for (int y = player.getBlockY(); y < world.getTopY(); y++) {
+                world.setBlockState(new BlockPos(player.getBlockX() + dx, y, player.getBlockZ() + dz),
+                        net.minecraft.block.Blocks.AIR.getDefaultState());
+            }
+        }
+    }
+
+    private static void assertStarsteelActive(TestContext context, ServerPlayerEntity player) {
+        var world = context.getWorld();
+        long time = Math.floorMod(world.getTimeOfDay(), 24000L);
+        context.assertTrue(time >= 13000 && time < 23000 && !world.isRaining() && !world.isThundering()
+                        && world.isSkyVisible(player.getBlockPos())
+                        && world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING,
+                        player.getBlockX(), player.getBlockZ()) <= player.getBlockY(),
+                "Starsteel hazard fixture lost its clear-night open-sky conditions");
+        // No fixture potion grants Night Vision: this must come from the real full-set server tick.
+        context.assertTrue(player.hasStatusEffect(StatusEffects.NIGHT_VISION),
+                "Full Starsteel set was not active before the real Riftbound hazard");
+    }
+
 
     private static void selectTier(ServerPlayerEntity player, BlockPos anchor, int ordinal) {
         PlayerProgress.complete(player, ordinal);

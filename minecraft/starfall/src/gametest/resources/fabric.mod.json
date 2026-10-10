@@ -7,7 +7,8 @@
   "entrypoints": {
     "fabric-gametest": [
       "io.github.afuerta.starfall.StarfallGameTests",
-      "io.github.afuerta.starfall.StarfallExpeditionGameTests"
+      "io.github.afuerta.starfall.StarCompassGameTests",
+      "io.github.afuerta.starfall.StarsteelArmorGameTests"
     ]
   },
   "depends": {

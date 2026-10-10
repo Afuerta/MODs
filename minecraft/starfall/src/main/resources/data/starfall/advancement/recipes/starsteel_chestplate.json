@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_starsteel": {
+    "has_starsteel_ingot": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -14,19 +14,19 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "starfall:star_compass"
+        "recipe": "starfall:starsteel_chestplate"
       }
     }
   },
   "requirements": [
     [
-      "has_starsteel",
+      "has_starsteel_ingot",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "starfall:star_compass"
+      "starfall:starsteel_chestplate"
     ]
   }
 }

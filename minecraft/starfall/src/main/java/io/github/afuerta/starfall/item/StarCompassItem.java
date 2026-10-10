@@ -1,64 +1,60 @@
 package io.github.afuerta.starfall.item;
 
-import io.github.afuerta.starfall.event.StarChart;
+import io.github.afuerta.starfall.event.StarImpactData;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LodestoneTrackerComponent;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.CompassItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 import java.util.List;
 import java.util.Optional;
 
-/** Uses vanilla's persisted compass target; tracked=false prevents lodestone-only invalidation. */
-public final class StarCompassItem extends CompassItem {
-    public StarCompassItem(Settings settings) { super(settings); }
-    @Override public String getTranslationKey(ItemStack stack) { return getTranslationKey(); }
-    @Override public ActionResult useOnBlock(ItemUsageContext context) { return ActionResult.PASS; }
-    @Override public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        ItemStack stack = user.getStackInHand(hand);
-        if (user.getItemCooldownManager().isCoolingDown(this)) return TypedActionResult.fail(stack);
-        if (world instanceof ServerWorld server) {
-            var pos = updateTarget(stack, server, user);
-            if (pos == null) user.sendMessage(Text.translatable("message.starfall.compass_empty"), true);
-            else {
-                boolean loaded = server.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4);
-                int distance = (int) Math.ceil(Math.sqrt(pos.getSquaredDistance(user.getBlockPos())));
-                user.sendMessage(Text.translatable(loaded ? "message.starfall.compass_target"
-                        : "message.starfall.compass_memory", pos.getX(), pos.getY(), pos.getZ(), distance), true);
-            }
-            user.getItemCooldownManager().set(this, 20);
-        }
-        return TypedActionResult.success(stack, world.isClient);
+/** A celestial compass whose target comes from impacts, never from right-clicking a lodestone. */
+public final class StarCompassItem extends Item {
+    private static final LodestoneTrackerComponent UNBOUND = new LodestoneTrackerComponent(Optional.empty(), false);
+
+    public StarCompassItem(Settings settings) {
+        // Keeping an empty tracker is intentional: the vanilla compass renderer spins instead of
+        // falling back to world spawn. tracked=false avoids vanilla lodestone validation/chunk access.
+        super(settings.component(DataComponentTypes.LODESTONE_TRACKER, UNBOUND));
     }
+
     @Override public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
-        super.inventoryTick(stack, world, entity, slot, selected);
-        // Held compasses refresh at most once each second. Stored stacks retain their last target.
-        if (world instanceof ServerWorld server && entity instanceof PlayerEntity player
-                && (selected || player.getOffHandStack() == stack) && Math.floorMod(player.age, 20) == 0) {
-            updateTarget(stack, server, player);
+        if (!(world instanceof ServerWorld server)) return;
+        LodestoneTrackerComponent tracker = stack.get(DataComponentTypes.LODESTONE_TRACKER);
+        // A portal must immediately stop the previous dimension's signal, even between refresh ticks.
+        if (tracker == null || tracker.tracked() || tracker.target()
+                .filter(target -> !target.dimension().equals(world.getRegistryKey())).isPresent()) {
+            stack.set(DataComponentTypes.LODESTONE_TRACKER, UNBOUND);
+        }
+        if (world.getTime() % 20 == 0) updateTarget(stack, server, entity.getBlockPos());
+    }
+
+    public static void updateTarget(ItemStack stack, ServerWorld world, BlockPos origin) {
+        Optional<GlobalPos> target = StarImpactData.get(world).nearest(world, origin)
+                .map(pos -> GlobalPos.create(world.getRegistryKey(), pos));
+        LodestoneTrackerComponent next = new LodestoneTrackerComponent(target, false);
+        // Avoid dirty inventory synchronization when the selected star has not changed.
+        if (!next.equals(stack.get(DataComponentTypes.LODESTONE_TRACKER))) {
+            stack.set(DataComponentTypes.LODESTONE_TRACKER, next);
         }
     }
-    public static net.minecraft.util.math.BlockPos updateTarget(ItemStack stack, ServerWorld world, PlayerEntity player) {
-        var target = StarChart.get(world).nearest(world, player.getBlockPos());
-        var component = new LodestoneTrackerComponent(target == null ? Optional.empty()
-                : Optional.of(GlobalPos.create(world.getRegistryKey(), target)), false);
-        if (!component.equals(stack.get(DataComponentTypes.LODESTONE_TRACKER))) {
-            stack.set(DataComponentTypes.LODESTONE_TRACKER, component);
-        }
-        return target;
-    }
+
     @Override public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("tooltip.starfall.star_compass"));
-        tooltip.add(Text.translatable("tooltip.starfall.star_compass_memory"));
+        tooltip.add(Text.translatable("item.starfall.star_compass.tooltip"));
+        LodestoneTrackerComponent tracker = stack.get(DataComponentTypes.LODESTONE_TRACKER);
+        Optional<GlobalPos> target = tracker == null ? Optional.empty() : tracker.target();
+        if (target.isPresent()) {
+            BlockPos pos = target.get().pos();
+            tooltip.add(Text.translatable("item.starfall.star_compass.target", pos.getX(), pos.getY(), pos.getZ()));
+        } else {
+            tooltip.add(Text.translatable("item.starfall.star_compass.unbound"));
+        }
     }
 }

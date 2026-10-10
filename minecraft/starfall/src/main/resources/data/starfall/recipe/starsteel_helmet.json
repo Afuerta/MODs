@@ -2,11 +2,11 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
-    "III",
-    "I I"
+    "SSS",
+    "S S"
   ],
   "key": {
-    "I": {
+    "S": {
       "item": "starfall:starsteel_ingot"
     }
   },

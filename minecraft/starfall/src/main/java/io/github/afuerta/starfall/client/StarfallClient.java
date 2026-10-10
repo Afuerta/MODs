@@ -5,14 +5,17 @@ import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.item.CompassAnglePredicateProvider;
 import net.minecraft.client.item.ModelPredicateProviderRegistry;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.LodestoneTrackerComponent;
 import net.minecraft.util.Identifier;
 
-/** Loaded only from the client entrypoint. Compass direction uses vanilla's lodestone renderer. */
+/** Client-only model registration; dedicated servers never load this entry point. */
 public final class StarfallClient implements ClientModInitializer {
-    @Override public void onInitializeClient() {
+    @Override
+    public void onInitializeClient() {
         ModelPredicateProviderRegistry.register(ModItems.STAR_COMPASS, Identifier.ofVanilla("angle"),
                 new CompassAnglePredicateProvider((world, stack, entity) -> {
-                    var tracker = stack.get(DataComponentTypes.LODESTONE_TRACKER);
+                    LodestoneTrackerComponent tracker = stack.get(DataComponentTypes.LODESTONE_TRACKER);
+                    // An empty target deliberately uses vanilla's aimless spin. Never use world spawn.
                     return tracker == null ? null : tracker.target().orElse(null);
                 }));
     }

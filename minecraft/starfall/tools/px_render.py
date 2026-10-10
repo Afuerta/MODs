@@ -95,31 +95,27 @@ def main():
             dest.parent.mkdir(parents=True, exist_ok=True)
             img.save(dest)
 
-    # Keep ordinary sprites compact and show complete armor UV layouts in a separate row.
+    # Contact sheet: first frame of animated item/block sprites. Static armor
+    # atlases retain their full 64x32 image, scaled to fit one cell without overlap.
     s = args.scale
     cols = 6
     cell = 16 * s + 8
-    sprites = [(rel, img) for rel, img in images if img.width == 16]
-    layers = [(rel, img) for rel, img in images if img.width > 16]
-    rows = (len(sprites) + cols - 1) // cols
-    layer_width = sum(img.width * s + 8 for _, img in layers)
-    layer_height = max((img.height * s + 8 for _, img in layers), default=0)
-    sheet = Image.new("RGBA", (max(cols * cell, layer_width), rows * cell + layer_height), (40, 40, 48, 255))
-    layer_x = 4
-    for i, (rel, img) in enumerate(sprites + layers):
+    rows = (len(images) + cols - 1) // cols
+    sheet = Image.new("RGBA", (cols * cell, rows * cell), (40, 40, 48, 255))
+    for i, (rel, img) in enumerate(images):
         frame = img.crop((0, 0, img.width, min(img.height, img.width)))
-        big = frame.resize((frame.width * s, frame.height * s), Image.NEAREST)
-        bg = Image.new("RGBA", big.size)
-        for y in range(0, big.height, s * 2):
-            for x in range(0, big.width, s * 2):
+        thumbnail_size = 16 * s
+        fit = min(thumbnail_size / frame.width, thumbnail_size / frame.height)
+        big = frame.resize((max(1, round(frame.width * fit)),
+                            max(1, round(frame.height * fit))), Image.NEAREST)
+        bg = Image.new("RGBA", (thumbnail_size, thumbnail_size))
+        for y in range(0, thumbnail_size, s * 2):
+            for x in range(0, thumbnail_size, s * 2):
                 for dy, dx, c in ((0, 0, 70), (0, s, 90), (s, 0, 90), (s, s, 70)):
                     bg.paste((c, c, c, 255), (x + dx, y + dy, x + dx + s, y + dy + s))
-        bg.alpha_composite(big)
-        if i < len(sprites):
-            sheet.paste(bg, ((i % cols) * cell + 4, (i // cols) * cell + 4))
-        else:
-            sheet.paste(bg, (layer_x, rows * cell + 4))
-            layer_x += img.width * s + 8
+        bg.alpha_composite(big, ((thumbnail_size - big.width) // 2,
+                                 (thumbnail_size - big.height) // 2))
+        sheet.paste(bg, ((i % cols) * cell + 4, (i // cols) * cell + 4))
     out = ROOT / "build" / "px-preview" / "sheet.png"
     out.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(out)

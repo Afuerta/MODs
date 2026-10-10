@@ -1,4 +1,4 @@
-// Original Starfall expedition art.
+// Original Starsteel helmet: icy metal, indigo shadows and gold star inlay.
 palette:
 a #1A1838
 b #EEF8FF
@@ -7,20 +7,21 @@ d #5A79B8
 e #FFE79A
 f #3A4A86
 g #8FB8E8
+h #B78B46
 pixels:
 ................
-................
-...aaaaaaaaaa...
-..agccccccccga..
-..acbbbbbbbcca..
-..aceeccccceca..
-..acccccccccca..
-..afccaaaaaccfa.
-..afca.....acfa.
-..afca.....acfa.
-..afca.....acfa.
-...aa.......aa..
-................
-................
+......aaaa......
+....aabbebaa....
+...abccceccda...
+..abccccccccda..
+..abccccecgcda..
+..acccceeeccda..
+..aheeeeeeehfa..
+..acdffffffgfa..
+..acd......gfa..
+..acd......gfa..
+..acd......gfa..
+..aeg......hfa..
+...aa......aa...
 ................
 ................
