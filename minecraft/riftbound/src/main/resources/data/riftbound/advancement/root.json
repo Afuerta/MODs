@@ -1,0 +1,40 @@
+{
+  "display": {
+    "icon": {
+      "id": "riftbound:verdant_echo"
+    },
+    "title": {
+      "translate": "advancement.riftbound.root.title"
+    },
+    "description": {
+      "translate": "advancement.riftbound.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png"
+  },
+  "criteria": {
+    "acquired": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "riftbound:verdant_echo",
+              "riftbound:ember_echo",
+              "riftbound:tidal_echo",
+              "riftbound:hollow_echo"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "acquired"
+    ]
+  ]
+}

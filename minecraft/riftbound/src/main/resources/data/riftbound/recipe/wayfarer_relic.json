@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "SSS",
+    "SDS",
+    "SSS"
+  ],
+  "key": {
+    "S": {
+      "item": "riftbound:resonance_shard"
+    },
+    "D": {
+      "item": "riftbound:dormant_relic"
+    }
+  },
+  "result": {
+    "id": "riftbound:wayfarer_relic",
+    "count": 1
+  }
+}

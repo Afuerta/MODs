@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "riftbound:block/rift_anchor"
+    }
+  }
+}

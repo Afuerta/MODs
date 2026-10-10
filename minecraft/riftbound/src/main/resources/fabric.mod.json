@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "riftbound",
+  "version": "${version}",
+  "name": "Riftbound: Wild Resonance",
+  "description": "Explore for wild echoes, open cooperative rift trials, and attune powerful relics.",
+  "authors": ["Afuerta"],
+  "contact": {"sources": "https://github.com/Afuerta/MODs"},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/riftbound/icon.png",
+  "environment": "*",
+  "entrypoints": {"main": ["com.afuerta.riftbound.RiftboundMod"]},
+  "mixins": ["riftbound.mixins.json"],
+  "depends": {"fabricloader": ">=0.16.14", "minecraft": "~1.21.1", "java": ">=21", "fabric-api": "*"}
+}

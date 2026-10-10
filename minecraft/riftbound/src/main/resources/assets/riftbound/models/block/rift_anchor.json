@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "riftbound:block/rift_anchor_top",
+    "side": "riftbound:block/rift_anchor_side",
+    "bottom": "riftbound:block/rift_anchor_bottom"
+  }
+}

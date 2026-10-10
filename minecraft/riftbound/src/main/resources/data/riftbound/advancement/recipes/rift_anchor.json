@@ -1,0 +1,30 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_material": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "riftbound:verdant_echo",
+              "riftbound:ember_echo",
+              "riftbound:tidal_echo",
+              "riftbound:hollow_echo"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_material"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "riftbound:rift_anchor"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "OVE",
+    "OAO",
+    "OTH"
+  ],
+  "key": {
+    "O": {
+      "item": "minecraft:obsidian"
+    },
+    "V": {
+      "item": "riftbound:verdant_echo"
+    },
+    "E": {
+      "item": "riftbound:ember_echo"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "T": {
+      "item": "riftbound:tidal_echo"
+    },
+    "H": {
+      "item": "riftbound:hollow_echo"
+    }
+  },
+  "result": {
+    "id": "riftbound:rift_anchor",
+    "count": 1
+  }
+}
