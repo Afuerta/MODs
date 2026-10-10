@@ -12,4 +12,16 @@ Source and instructions: [minecraft/riftbound](minecraft/riftbound/README.md).
 - [Development roadmap](minecraft/riftbound/docs/roadmap.md)
 - [Claude collaboration handoff](minecraft/riftbound/docs/claude-handoff.md)
 
-This repository currently contains the new Minecraft project. Additional mods can be kept in separate directories.
+Additional mods are kept in separate directories.
+
+## Minecraft — Starfall
+
+A separate mod for **Minecraft Java Edition 1.21.1**, using **NeoForge 21.1.248+** and Java 21.
+Chase falling stars, explore glowing craters, forge Starsteel tools, and make wishes.
+
+- [Source and instructions](starfall/README.md)
+- [Game design](starfall/DESIGN.md) and [development tasks](starfall/TASKS.md)
+- [Starfall contributor instructions](starfall/AGENTS.md)
+- [Texture preview](starfall/docs/starfall-textures-preview.png)
+
+Starfall and the Fabric projects require their respective mod loaders.

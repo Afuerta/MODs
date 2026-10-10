@@ -1,0 +1,30 @@
+# Gradle
+**/.gradle/
+**/build/
+**/out/
+
+# Minecraft run folders
+**/run/
+**/runs/
+**/run-data/
+
+# Local maven publish
+**/repo/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+**/bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/

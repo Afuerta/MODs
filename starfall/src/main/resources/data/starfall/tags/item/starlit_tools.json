@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "starfall:starsteel_sword",
+    "starfall:starsteel_pickaxe",
+    "starfall:starsteel_axe",
+    "starfall:starsteel_shovel",
+    "starfall:starsteel_hoe"
+  ]
+}

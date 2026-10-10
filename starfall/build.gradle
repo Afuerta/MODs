@@ -1,0 +1,251 @@
+import java.awt.image.BufferedImage
+import java.util.zip.GZIPOutputStream
+import javax.imageio.ImageIO
+
+plugins {
+    id 'java-library'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        // `gradle runGameTestServer` starts a headless server, runs every @GameTest in
+        // io.github.afuerta.starfall.gametest and exits non-zero if any test fails. CI runs this.
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // Add optional runtime-only mods (JEI, Jade, ...) to `localRuntime` when an issue needs them.
+}
+
+// ---------------------------------------------------------------------------------------------
+// neoforge.mods.toml is generated from src/main/templates with values from gradle.properties.
+// ---------------------------------------------------------------------------------------------
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+// ---------------------------------------------------------------------------------------------
+// Textures are stored as text pixel art (src/main/pixelart/**/*.px) so they can be reviewed and
+// edited in plain text. This task renders them to PNGs under assets/<modid>/textures/.
+// Format: see AGENTS.md ("Textures"). Preview locally with: python3 tools/px_render.py
+// ---------------------------------------------------------------------------------------------
+class PixelArt {
+    static BufferedImage parse(File file) {
+        Map<Character, Integer> palette = [:]
+        palette[('.' as char)] = 0
+        List<String> rows = []
+        String mode = null
+        file.readLines('UTF-8').eachWithIndex { String raw, int index ->
+            String line = raw.replaceAll(/\s+$/, '')
+            int lineNo = index + 1
+            if (line.isEmpty() || line.trim().startsWith('//')) {
+                return
+            }
+            if (line == 'palette:') {
+                mode = 'palette'
+                return
+            }
+            if (line == 'pixels:') {
+                mode = 'pixels'
+                return
+            }
+            if (mode == 'palette') {
+                String[] parts = line.trim().split(/\s+/)
+                if (parts.length != 2 || parts[0].length() != 1) {
+                    throw new GradleException("${file}:${lineNo}: palette lines look like 'a #RRGGBB' or 'a #RRGGBBAA'")
+                }
+                palette[(parts[0].charAt(0) as Character)] = parseColour(parts[1], file, lineNo)
+            } else if (mode == 'pixels') {
+                rows << line
+            } else {
+                throw new GradleException("${file}:${lineNo}: expected 'palette:' or 'pixels:' before anything else")
+            }
+        }
+        if (rows.isEmpty()) {
+            throw new GradleException("${file}: has no pixel rows")
+        }
+        int width = rows[0].length()
+        BufferedImage image = new BufferedImage(width, rows.size(), BufferedImage.TYPE_INT_ARGB)
+        rows.eachWithIndex { String row, int y ->
+            if (row.length() != width) {
+                throw new GradleException("${file}: pixel row ${y} is ${row.length()} wide, expected ${width}")
+            }
+            for (int x = 0; x < width; x++) {
+                Character key = row.charAt(x) as Character
+                Integer argb = palette[key]
+                if (argb == null) {
+                    throw new GradleException("${file}: pixel row ${y} uses '${key}' which is not in the palette")
+                }
+                image.setRGB(x, y, argb as int)
+            }
+        }
+        return image
+    }
+
+    static int parseColour(String text, File file, int lineNo) {
+        String hex = text.startsWith('#') ? text.substring(1) : text
+        if (hex.length() == 6) {
+            hex = hex + 'FF'
+        }
+        if (!(hex ==~ /[0-9A-Fa-f]{8}/)) {
+            throw new GradleException("${file}:${lineNo}: bad colour '${text}' (use #RRGGBB or #RRGGBBAA)")
+        }
+        long rgba = Long.parseLong(hex, 16)
+        int r = ((rgba >> 24) & 0xFF) as int
+        int g = ((rgba >> 16) & 0xFF) as int
+        int b = ((rgba >> 8) & 0xFF) as int
+        int a = (rgba & 0xFF) as int
+        return (a << 24) | (r << 16) | (g << 8) | b
+    }
+}
+
+def pixelArtDir = file('src/main/pixelart')
+def textureOutDir = layout.buildDirectory.dir('generated/pixelart')
+def modIdForTextures = mod_id
+
+var renderPixelArt = tasks.register('renderPixelArt') {
+    group = 'starfall'
+    description = 'Renders src/main/pixelart/**/*.px into PNG textures.'
+    inputs.dir(pixelArtDir)
+    inputs.property('rendererVersion', 1) // bump when PixelArt changes so outputs are rebuilt
+    outputs.dir(textureOutDir)
+    doLast {
+        System.setProperty('java.awt.headless', 'true')
+        File outRoot = textureOutDir.get().asFile
+        outRoot.deleteDir()
+        File textureRoot = new File(outRoot, "assets/${modIdForTextures}/textures")
+        int count = 0
+        pixelArtDir.eachFileRecurse(groovy.io.FileType.FILES) { File src ->
+            if (!src.name.endsWith('.px')) {
+                return
+            }
+            String rel = pixelArtDir.toPath().relativize(src.toPath()).toString().replace('\\', '/')
+            File dest = new File(textureRoot, rel.substring(0, rel.length() - 3) + '.png')
+            dest.parentFile.mkdirs()
+            ImageIO.write(PixelArt.parse(src), 'png', dest)
+            count++
+        }
+        logger.lifecycle("Rendered ${count} pixel-art textures")
+    }
+}
+sourceSets.main.resources.srcDir renderPixelArt
+neoForge.ideSyncTask renderPixelArt
+
+// ---------------------------------------------------------------------------------------------
+// GameTests need a structure template. We generate an empty 9x9x9 one (starfall:empty) instead of
+// committing a binary .nbt file.
+// ---------------------------------------------------------------------------------------------
+def testStructureOutDir = layout.buildDirectory.dir('generated/teststructures')
+def modIdForStructures = mod_id
+
+var generateTestStructures = tasks.register('generateTestStructures') {
+    group = 'starfall'
+    description = 'Writes the empty GameTest structure template.'
+    inputs.property('writerVersion', 1) // bump when the NBT writer changes
+    inputs.property('size', 9)
+    inputs.property('dataVersion', 3955) // Minecraft 1.21.1
+    outputs.dir(testStructureOutDir)
+    doLast {
+        File out = new File(testStructureOutDir.get().asFile, "data/${modIdForStructures}/structure/empty.nbt")
+        out.parentFile.mkdirs()
+        out.withOutputStream { OutputStream os ->
+            DataOutputStream nbt = new DataOutputStream(new GZIPOutputStream(os))
+            nbt.writeByte(10); nbt.writeUTF('')                                   // root compound
+            nbt.writeByte(3); nbt.writeUTF('DataVersion'); nbt.writeInt(3955)     // int
+            nbt.writeByte(9); nbt.writeUTF('size'); nbt.writeByte(3); nbt.writeInt(3)
+            nbt.writeInt(9); nbt.writeInt(9); nbt.writeInt(9)
+            ['palette', 'blocks', 'entities'].each { String name ->                // empty compound lists
+                nbt.writeByte(9); nbt.writeUTF(name); nbt.writeByte(10); nbt.writeInt(0)
+            }
+            nbt.writeByte(0)                                                       // end root
+            nbt.close()
+        }
+    }
+}
+sourceSets.main.resources.srcDir generateTestStructures
+neoForge.ideSyncTask generateTestStructures
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
