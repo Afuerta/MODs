@@ -146,9 +146,12 @@ def validate_star_compass(documents: dict[pathlib.Path, dict], language: dict) -
                                      "C": {"item": "minecraft:compass"}}
             or recipe.get("result") != {"id": "starfall:star_compass", "count": 1}):
         fail("star compass: recipe must consume one compass and four Star Shards")
-    unlocks = documents.get(DATA / "advancement/first_shard.json", {}).get("rewards", {}).get("recipes", [])
+    unlock = documents.get(DATA / "advancement/recipes/star_compass.json", {})
+    unlocks = unlock.get("rewards", {}).get("recipes", [])
     if "starfall:star_compass" not in unlocks:
-        fail("star compass: first shard must unlock its recipe")
+        fail("star compass: needs an independent recipe unlock for existing players")
+    if unlock.get("criteria", {}).get("has_star_shard", {}).get("trigger") != "minecraft:inventory_changed":
+        fail("star compass: obtaining shards must unlock the recipe")
     for key in ("item.starfall.star_compass", "item.starfall.star_compass.tooltip",
                 "item.starfall.star_compass.unbound", "item.starfall.star_compass.target"):
         if key not in language:

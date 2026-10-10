@@ -33,9 +33,6 @@
     ]
   ],
   "rewards": {
-    "experience": 10,
-    "recipes": [
-      "starfall:star_compass"
-    ]
+    "experience": 10
   }
 }
