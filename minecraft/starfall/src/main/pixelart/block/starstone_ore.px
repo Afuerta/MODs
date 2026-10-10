@@ -1,0 +1,27 @@
+// Starstone Ore: crater stone studded with star-shard crystals.
+palette:
+a #272043
+b #1E1933
+c #2F2752
+d #8FE3FF
+e #D8F8FF
+f #38305F
+g #433A6E
+h #6FB8D8
+pixels:
+aabaccbbccccaaca
+cccaccbaaaaabbaa
+bbbacaccabcccccc
+bbabdefcabacffff
+fgaaedccaaaaaacc
+cfbahfcccabheaff
+fcccacaaaadehfca
+cfcaaaaabacaccaa
+fcaccffcaaccaccg
+acaccfccabcaaccf
+gfbaccdebbccaafc
+ffaaadefacfadefc
+cfbacfhfaccdehfg
+ffccccccaccahfcf
+aacfffcfcfaaacfc
+bacfaagfcfacacaf

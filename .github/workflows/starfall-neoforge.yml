@@ -1,17 +1,22 @@
-name: Build Starfall
+name: Starfall (NeoForge)
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'starfall/**'
+      - '.github/workflows/starfall-neoforge.yml'
   pull_request:
+    paths:
+      - 'starfall/**'
+      - '.github/workflows/starfall-neoforge.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: starfall-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -55,32 +60,3 @@ jobs:
           name: starfall-mod-jar
           path: starfall/build/libs/*.jar
           if-no-files-found: error
-
-      - name: Post failure details on the pull request
-        if: failure() && github.event_name == 'pull_request'
-        working-directory: .
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          LOG=build.log
-          if [ -s gametest.log ]; then LOG=gametest.log; fi
-          {
-            echo "### Starfall CI failed (\`$LOG\`)"
-            echo
-            echo "Key lines:"
-            echo '```'
-            grep -E "error:|FAILED|Exception|Caused by|failed|Failed" "$LOG" | head -n 60 || true
-            echo '```'
-            echo
-            echo "<details><summary>Last 150 lines</summary>"
-            echo
-            echo '```'
-            tail -n 150 "$LOG" || true
-            echo '```'
-            echo "</details>"
-            echo
-            echo "Full log: $RUN_URL"
-          } > ci-comment.md
-          gh pr comment "$PR_NUMBER" --body-file ci-comment.md

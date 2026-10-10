@@ -1,0 +1,90 @@
+{
+  "display": {
+    "icon": {
+      "id": "starfall:chiseled_starstone"
+    },
+    "title": {
+      "translate": "advancement.starfall.heavenly_architect.title"
+    },
+    "description": {
+      "translate": "advancement.starfall.heavenly_architect.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "starstone_stairs": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:starstone_stairs"
+          }
+        ]
+      }
+    },
+    "starstone_slab": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:starstone_slab"
+          }
+        ]
+      }
+    },
+    "starstone_wall": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:starstone_wall"
+          }
+        ]
+      }
+    },
+    "polished_starstone": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:polished_starstone"
+          }
+        ]
+      }
+    },
+    "chiseled_starstone": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:chiseled_starstone"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "starstone_stairs"
+    ],
+    [
+      "starstone_slab"
+    ],
+    [
+      "starstone_wall"
+    ],
+    [
+      "polished_starstone"
+    ],
+    [
+      "chiseled_starstone"
+    ]
+  ],
+  "parent": "starfall:first_shard",
+  "rewards": {
+    "experience": 35
+  }
+}

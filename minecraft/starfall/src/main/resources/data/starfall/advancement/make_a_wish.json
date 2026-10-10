@@ -1,0 +1,38 @@
+{
+  "display": {
+    "icon": {
+      "id": "starfall:wishing_star"
+    },
+    "title": {
+      "translate": "advancement.starfall.make_a_wish.title"
+    },
+    "description": {
+      "translate": "advancement.starfall.make_a_wish.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "wishing_star": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starfall:wishing_star"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "wishing_star"
+    ]
+  ],
+  "parent": "starfall:first_shard",
+  "rewards": {
+    "experience": 15
+  }
+}

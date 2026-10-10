@@ -55,7 +55,33 @@ public final class ContractCatalog {
                     needs(26, 5, "minecraft:phantom_membrane", 4, "minecraft:ender_pearl", 4), pays(14, 3)),
             contract("last_shift", "One More Shift",
                     "The foreman's old time clock still punches in. Rebuild its indestructible casing and let the depot rest.",
-                    needs(32, 6, "minecraft:obsidian", 12, "minecraft:diamond", 2), pays(16, 4)));
+                    needs(32, 6, "minecraft:obsidian", 12, "minecraft:diamond", 2), pays(16, 4)),
+            // Append only: the original six Artificer definitions and first 18
+            // completed-count positions remain stable across this expansion.
+            contract("apiary_exchange", "The Apiary Heat Exchange",
+                    "Bees have occupied the cooling ducts. Replace the seals without evicting the new engineers.",
+                    needs(24, 4, "minecraft:honeycomb", 8, "minecraft:copper_block", 2), pays(10, 2)),
+            contract("silk_insulation", "Insulate the Switchyard",
+                    "Rain keeps shorting the freight switches. We need flexible thread and tough hide for their sleeves.",
+                    needs(20, 4, "minecraft:string", 16, "minecraft:rabbit_hide", 4), pays(10, 2)),
+            contract("greenhouse_pressure", "Greenhouse Pressure Test",
+                    "The old conservatory stores sunlight under pressure. Replace its panes and living pressure gauges.",
+                    needs(26, 4, "minecraft:cactus", 12, "minecraft:glass", 8), pays(12, 3)),
+            contract("rail_restoration", "Rails for the Return Shift",
+                    "The depot's return line stops halfway across the flats. Lay fresh track and reconnect its signals.",
+                    needs(28, 5, "minecraft:rail", 24, "minecraft:redstone", 8), pays(12, 3)),
+            contract("ashen_regulator", "The Ashen Regulator",
+                    "A furnace valve glows long after the fire is out. Bring a heatproof housing and elastic coolant seals.",
+                    needs(30, 5, "minecraft:magma_cream", 6, "minecraft:blackstone", 16), pays(14, 3)),
+            contract("observatory_ink", "Write the Invisible Sky",
+                    "The relay astronomer charts stars through factory smoke. Deliver a telescope and luminous recording ink.",
+                    needs(24, 4, "minecraft:glow_ink_sac", 8, "minecraft:spyglass", 1), pays(12, 3)),
+            contract("end_platform", "Freight Beyond the Horizon",
+                    "An impossible destination appeared on the departure board. Test its stone and its strange purple cargo.",
+                    needs(32, 6, "minecraft:end_stone", 24, "minecraft:chorus_fruit", 8), pays(16, 4)),
+            contract("silent_archive", "The Silent Archive",
+                    "The archive listens better than it speaks. Bring quiet-growth samples and lights that do not buzz.",
+                    needs(28, 6, "minecraft:sculk", 4, "minecraft:candle", 8), pays(14, 4)));
 
     private static final List<SalvageContract> ALL = Stream.of(SCROUNGER, MECHANIST, ARTIFICER)
             .flatMap(List::stream).toList();

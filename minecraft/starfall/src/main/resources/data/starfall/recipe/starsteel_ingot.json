@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "starfall:star_shard"
+    },
+    {
+      "item": "starfall:star_shard"
+    },
+    {
+      "item": "starfall:star_shard"
+    },
+    {
+      "item": "starfall:star_shard"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "starfall:starsteel_ingot"
+  }
+}

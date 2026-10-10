@@ -121,7 +121,7 @@ public final class RiftboundMod implements ModInitializer {
             }
         });
         ServerLivingEntityEvents.MOB_CONVERSION.register(TRIALS::onConversion);
-        LOGGER.info("Riftbound: Wild Resonance 0.1 initialized");
+        LOGGER.info("Riftbound: Wild Resonance 0.2 initialized");
     }
 
     private static Aspect classify(ServerWorld world, net.minecraft.util.math.BlockPos pos) {

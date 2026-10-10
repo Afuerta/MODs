@@ -2,6 +2,8 @@ package com.afuerta.copperwake;
 
 import com.afuerta.copperwake.entity.ConstructRegistry;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -23,8 +25,16 @@ import net.minecraft.world.World;
 
 import java.util.List;
 
+/** Server-authoritative handheld devices with payment only after eligibility checks. */
 final class GadgetItem extends Item {
-    enum Action { JOURNAL, TRAVEL, ARC, SPRING, HEAL, SUMMON }
+    enum Action { JOURNAL, TRAVEL, ARC, SPRING, HEAL, SUMMON, SCAN, REPAIR }
+    static final int SCAN_RADIUS = 16;
+    static final int SCAN_TARGET_CAP = 8;
+    static final int SCAN_DURATION = 160;
+    static final int SCAN_COOLDOWN = 200;
+    static final int REPAIR_AMOUNT = 32;
+    static final int REPAIR_COST = 2;
+    static final int REPAIR_COOLDOWN = 100;
     private final String id;
     private final Action action;
 
@@ -46,20 +56,70 @@ final class GadgetItem extends Item {
             case SPRING -> spring(player);
             case HEAL -> heal(player, stack);
             case SUMMON -> summon(player, stack);
+            case SCAN -> scan(player);
+            case REPAIR -> repair(player, hand);
         };
         return success ? TypedActionResult.success(stack) : TypedActionResult.fail(stack);
     }
 
+    private boolean scan(ServerPlayerEntity player) {
+        if (!requireRank(player, 1)) return false;
+        ServerWorld world = player.getServerWorld();
+        var targets = world.getEntitiesByClass(HostileEntity.class, player.getBoundingBox().expand(SCAN_RADIUS),
+                target -> target.isAlive() && player.squaredDistanceTo(target) <= SCAN_RADIUS * SCAN_RADIUS);
+        targets.sort(java.util.Comparator.comparingDouble(player::squaredDistanceTo));
+        if (targets.isEmpty()) {
+            player.sendMessage(Text.translatable("message.copperwake.scan_empty").formatted(Formatting.GRAY), false);
+            return false;
+        }
+        if (!fuel(player)) return false;
+        for (var target : targets.stream().limit(SCAN_TARGET_CAP).toList()) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, SCAN_DURATION, 0, false, false, true));
+        }
+        player.getItemCooldownManager().set(this, SCAN_COOLDOWN);
+        world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() + 1, player.getZ(), 32, 1.5, .5, 1.5, .05);
+        world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE,
+                SoundCategory.PLAYERS, .8f, 1.4f);
+        player.sendMessage(Text.translatable("message.copperwake.scan_result", Math.min(targets.size(), SCAN_TARGET_CAP))
+                .formatted(Formatting.AQUA), false);
+        return true;
+    }
+
+    private boolean repair(ServerPlayerEntity player, Hand hand) {
+        if (!requireRank(player, 1)) return false;
+        if (hand != Hand.MAIN_HAND) {
+            player.sendMessage(Text.translatable("message.copperwake.repair_main_hand").formatted(Formatting.YELLOW), false);
+            return false;
+        }
+        ItemStack equipment = player.getOffHandStack();
+        if (!equipment.isDamageable() || !equipment.isDamaged()) {
+            player.sendMessage(Text.translatable("message.copperwake.repair_target").formatted(Formatting.GRAY), false);
+            return false;
+        }
+        if (!SalvageGuild.consume(player, ModContent.SCRAP, REPAIR_COST)) {
+            player.sendMessage(Text.translatable("message.copperwake.repair_fuel").formatted(Formatting.YELLOW), false);
+            return false;
+        }
+        int restored = Math.min(REPAIR_AMOUNT, equipment.getDamage());
+        equipment.setDamage(equipment.getDamage() - restored);
+        player.getInventory().markDirty();
+        player.getItemCooldownManager().set(this, REPAIR_COOLDOWN);
+        player.getServerWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_SMITHING_TABLE_USE,
+                SoundCategory.PLAYERS, .8f, 1.3f);
+        player.sendMessage(Text.translatable("message.copperwake.repair_result", restored).formatted(Formatting.GREEN), false);
+        return true;
+    }
+
     private boolean requireRank(ServerPlayerEntity player, int rank) {
         if (SalvageGuild.rankAtLeast(player, rank)) return true;
-        SalvageGuild.say(player, rank == 1 ? "Mechanist rank required: complete 4 guild contracts."
-                : "Artificer rank required: complete 12 guild contracts.", Formatting.YELLOW);
+        player.sendMessage(Text.translatable(rank == 1 ? "message.copperwake.mechanist_required"
+                : "message.copperwake.artificer_required").formatted(Formatting.YELLOW), false);
         return false;
     }
 
     private boolean fuel(ServerPlayerEntity player) {
         if (SalvageGuild.consume(player, ModContent.SCRAP, 1)) return true;
-        SalvageGuild.say(player, "You need one Scrap to power this device.", Formatting.YELLOW);
+        player.sendMessage(Text.translatable("message.copperwake.scrap_required").formatted(Formatting.YELLOW), false);
         return false;
     }
 

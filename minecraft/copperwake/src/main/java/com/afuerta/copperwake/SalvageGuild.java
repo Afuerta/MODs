@@ -46,6 +46,8 @@ public final class SalvageGuild {
         say(player, "5. Twelve deliveries unlock Artificer rank. Use a Foreman Seal on open Rustwild ground to wake the Foundry Foreman.", Formatting.GRAY);
         say(player, "Use the Key again to return. Lost your key? /copperwake return is always available in the Rustwild. /copperwake contract and status show your next goal.", Formatting.AQUA);
         say(player, "Death and inventory drops follow normal Minecraft rules. Prepare food, armor and torches before your first expedition.", Formatting.DARK_GRAY);
+        player.sendMessage(Text.translatable("journal.copperwake.field_devices").formatted(Formatting.AQUA), false);
+        player.sendMessage(Text.translatable("journal.copperwake.expanded_contracts").formatted(Formatting.GRAY), false);
     }
 
     static void status(ServerPlayerEntity player) {
@@ -59,8 +61,11 @@ public final class SalvageGuild {
     static void showContract(ServerPlayerEntity player) {
         status(player);
         var contract = ContractCatalog.current(GuildProgress.completed(player));
-        say(player, "Contract: " + contract.title(), Formatting.YELLOW);
-        say(player, contract.description(), Formatting.GRAY);
+        String contractName = contract.id().substring("copperwake:".length());
+        player.sendMessage(Text.translatable("message.copperwake.contract_title",
+                Text.translatable("contract.copperwake." + contractName + ".title")).formatted(Formatting.YELLOW), false);
+        player.sendMessage(Text.translatable("contract.copperwake." + contractName + ".description")
+                .formatted(Formatting.GRAY), false);
         contract.requirements().forEach((id, amount) -> {
             Item item = requiredItem(id);
             int present = count(player, item);
@@ -90,7 +95,9 @@ public final class SalvageGuild {
         rewards.forEach((item, amount) -> give(player, new ItemStack(item, amount)));
         player.getInventory().markDirty();
         player.getServerWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_SMITHING_TABLE_USE, SoundCategory.PLAYERS, 0.8f, 1.2f);
-        say(player, "Order delivered: " + contract.title(), Formatting.GREEN);
+        player.sendMessage(Text.translatable("message.copperwake.contract_delivered",
+                Text.translatable("contract.copperwake." + contract.id().substring("copperwake:".length()) + ".title"))
+                .formatted(Formatting.GREEN), false);
         if (ContractCatalog.rankIndex(GuildProgress.completed(player)) > before) {
             say(player, "Guild promotion! You are now a " + ContractCatalog.rankName(GuildProgress.completed(player)) + ".", Formatting.GOLD);
         }

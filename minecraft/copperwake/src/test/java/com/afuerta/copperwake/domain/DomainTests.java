@@ -39,8 +39,16 @@ public final class DomainTests {
         for (SalvageContract contract : ContractCatalog.all()) {
             check(allIds.add(contract.id()), "unique contract id " + contract.id());
         }
-        equal(14, allIds.size(), "fourteen contracts");
-        for (int completed = 0; completed < 18; completed++) {
+        equal(22, allIds.size(), "twenty-two contracts");
+        List<String> legacy = List.of("broken_survey", "lamplighter_route", "sodden_pump", "moss_registry",
+                "wind_chart", "cold_start", "quartz_choir", "drowned_manifest", "wind_chart", "cold_start",
+                "quartz_choir", "drowned_manifest", "deep_chime", "storm_array", "furnace_treaty",
+                "tide_ledger", "moon_audit", "last_shift");
+        for (int completed = 0; completed < legacy.size(); completed++) {
+            equal("copperwake:" + legacy.get(completed), ContractCatalog.current(completed).id(),
+                    "original progression position preserved " + completed);
+        }
+        for (int completed = 0; completed < 26; completed++) {
             SalvageContract first = ContractCatalog.current(completed);
             equal(first, ContractCatalog.current(completed), "same persisted count has the same contract");
             reached.add(first.id());
@@ -49,8 +57,8 @@ public final class DomainTests {
         for (int i = 4; i < 8; i++) {
             equal(ContractCatalog.current(i), ContractCatalog.current(i + 4), "mechanist four-contract loop");
         }
-        for (int i = 12; i < 18; i++) {
-            equal(ContractCatalog.current(i), ContractCatalog.current(i + 6), "artificer six-contract loop");
+        for (int i = 12; i < 26; i++) {
+            equal(ContractCatalog.current(i), ContractCatalog.current(i + 14), "artificer fourteen-contract loop");
         }
         check(!ContractCatalog.current(3).equals(ContractCatalog.current(4)), "rank upgrade changes pool");
         check(!ContractCatalog.current(11).equals(ContractCatalog.current(12)), "final rank changes pool");
@@ -95,7 +103,11 @@ public final class DomainTests {
                 "minecraft:lapis_lazuli", "minecraft:glowstone_dust", "minecraft:paper", "minecraft:prismarine_shard",
                 "minecraft:echo_shard", "minecraft:deepslate", "minecraft:lightning_rod", "minecraft:blaze_powder",
                 "minecraft:basalt", "minecraft:prismarine_crystals", "minecraft:nautilus_shell",
-                "minecraft:phantom_membrane", "minecraft:ender_pearl", "minecraft:obsidian", "minecraft:diamond");
+                "minecraft:phantom_membrane", "minecraft:ender_pearl", "minecraft:obsidian", "minecraft:diamond",
+                "minecraft:honeycomb", "minecraft:copper_block", "minecraft:string", "minecraft:rabbit_hide",
+                "minecraft:cactus", "minecraft:glass", "minecraft:rail", "minecraft:magma_cream", "minecraft:blackstone",
+                "minecraft:glow_ink_sac", "minecraft:spyglass", "minecraft:end_stone", "minecraft:chorus_fruit",
+                "minecraft:sculk", "minecraft:candle");
         for (SalvageContract contract : ContractCatalog.all()) {
             check(contract.requirements().getOrDefault("copperwake:memory_glass", 0) >= 1,
                     "every delivery consumes exploration-only memory glass");
@@ -116,7 +128,7 @@ public final class DomainTests {
                 check(!contract.requirements().containsKey(item.getKey()), "no immediate input/reward cycle");
             }
         }
-        for (int completed = 0; completed < 18; completed++) {
+        for (int completed = 0; completed < 26; completed++) {
             Map<String, Integer> rewards = ContractCatalog.current(completed).rewards();
             equal(completed >= 4, rewards.containsKey("copperwake:charged_core"),
                     "charged cores begin at Mechanist rank");
@@ -167,7 +179,7 @@ public final class DomainTests {
         for (int completed : new int[]{1_000_000, Integer.MAX_VALUE - 1, Integer.MAX_VALUE}) {
             equal(2, ContractCatalog.rankIndex(completed), "rank caps at Artificer");
             equal(-1, ContractCatalog.nextRankAt(completed), "max rank has no next threshold");
-            int equivalent = 12 + (int) (((long) completed - 12L) % 6L);
+            int equivalent = 12 + (int) (((long) completed - 12L) % 14L);
             equal(ContractCatalog.current(equivalent), ContractCatalog.current(completed),
                     "large count selection matches overflow-safe long arithmetic");
         }

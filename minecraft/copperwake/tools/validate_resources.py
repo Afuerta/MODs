@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -20,6 +21,7 @@ ITEMS = {
     "scrap", "brass_gear", "memory_glass", "charged_core", "field_journal",
     "survey_key", "arc_gauntlet", "spring_boots", "patch_kit", "foreman_seal",
     "foreman_heart", "salvage_bench", "riveted_copper", "lumen_glass",
+    "survey_flare", "field_repairer",
 }
 BLOCKS = {"salvage_bench", "riveted_copper", "lumen_glass"}
 ENTITIES = {"rust_mite", "coil_sentry", "foundry_foreman"}
@@ -78,6 +80,16 @@ def main() -> int:
         check(f"tooltip.copperwake.{item}" in language, language_path, f"missing tooltip for {item}")
     for entity in ENTITIES:
         check(f"entity.copperwake.{entity}" in language, language_path, f"missing entity name {entity}")
+    catalog = ROOT / "src/main/java/com/afuerta/copperwake/domain/ContractCatalog.java"
+    contract_ids = re.findall(r'contract\("([a-z_]+)"', catalog.read_text())
+    check(len(contract_ids) == 22 and len(set(contract_ids)) == 22, catalog, "expected 22 unique authored contracts")
+    for contract in contract_ids:
+        for field in ("title", "description"):
+            key = f"contract.copperwake.{contract}.{field}"
+            check(bool(language.get(key)), language_path, f"missing contract translation {key}")
+    for source in (ROOT / "src/main/java/com/afuerta/copperwake").glob("*.java"):
+        for key in re.findall(r'Text\.translatable\("((?:message|journal)\.copperwake\.[a-z_]+)"', source.read_text()):
+            check(bool(language.get(key)), language_path, f"missing device/guidance message {key}")
     for block in BLOCKS:
         for relative in [f"assets/copperwake/blockstates/{block}.json", f"data/copperwake/loot_table/blocks/{block}.json"]:
             path = RES / relative

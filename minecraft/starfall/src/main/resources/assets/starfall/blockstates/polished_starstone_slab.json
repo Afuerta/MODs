@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "starfall:block/polished_starstone_slab"
+    },
+    "type=double": {
+      "model": "starfall:block/polished_starstone"
+    },
+    "type=top": {
+      "model": "starfall:block/polished_starstone_slab_top"
+    }
+  }
+}

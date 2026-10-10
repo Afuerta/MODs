@@ -1,6 +1,6 @@
 # Copperwake: Salvagers of the Rustwild
 
-**Minecraft Java 1.21.1 · Fabric · Java 21 · 0.1.0-alpha.1**
+**Minecraft Java 1.21.1 · Fabric · Java 21 · 0.2.0-alpha.1**
 
 The machines kept working after everyone left. Now their workshops are forests,
 their freight yards are ruins, and their foreman still expects the next shift.
@@ -44,10 +44,10 @@ installing this alpha or later removing a dimension mod.
 | Exploration | Rustwild dimension; three custom land biomes; vanilla ocean between landmasses |
 | Landmarks | 29×20×27 salvage yard with crane, 19×31×19 relay tower, 31×28×29 twin-stack foundry; climbable paths, loot barrels, and persistent guards |
 | Enemies | Rust Mite with committed pounce; Coil Sentry with marked pulse; Foundry Foreman with boss bar and two combat phases |
-| Guild | 14 authored contracts, three ranks, persisted per-player progress, deterministic order and repeatable late-game deliveries |
-| Gadgets | Arc Gauntlet, handheld Spring Boots, Patch Kits, Survey Key and Foreman Seal |
+| Guild | 22 authored contracts, three ranks, persisted per-player progress, deterministic order and repeatable late-game deliveries |
+| Gadgets | Arc Gauntlet, handheld Spring Boots, Patch Kits, Survey Key, Foreman Seal, Survey Flare and Field Repairer |
 | Building | Salvage Bench, Riveted Copper and luminous Lumen Glass |
-| Guidance | Field Journal, status/contract commands, recipe-book unlocks and 12 progression advancements |
+| Guidance | Field Journal, status/contract commands, recipe-book unlocks and 14 progression advancements; translated contract titles/descriptions |
 
 All three constructs have original animated voxel models. Item and block models
 use original cuboid geometry with Minecraft's installed textures. Structures are
@@ -73,6 +73,12 @@ count; late orders repeat after the final guild rank.
   difficulty. A nearby living Foreman prevents another summon. The seal is consumed
   only after a successful spawn. The boss persists; do not summon at your base.
 - **Foreman Heart:** guaranteed boss trophy; can become a large batch of Lumen Glass.
+- **Survey Flare:** reusable Mechanist scanner; one Scrap reveals the nearest eight
+  hostiles within 16 blocks for eight seconds, including through cover. Ten-second
+  cooldown. Deals no damage, ignores passive mobs, and spends nothing on an empty scan.
+- **Field Repairer:** reusable Mechanist tool; hold it in your main hand and damaged
+  equipment in your offhand. Two Scrap restores up to 32 durability with a five-second
+  cooldown. Preserves the item's components; undamaged or invalid equipment spends nothing.
 
 Mites commit to their jump; sidestep the warning. Sentries lock their pulse on a
 marked position; move before it fires. The Foreman marks a circular shockwave:
@@ -106,12 +112,12 @@ python tools/validate_resources.py
 ```
 
 On Windows use `gradlew.bat build`. The installable file is
-`build/libs/copperwake-0.1.0-alpha.1.jar`; the `-sources.jar` is for developers.
+`build/libs/copperwake-0.2.0-alpha.1.jar`; the `-sources.jar` is for developers.
 The CI workflow uploads both as an artifact named `copperwake-fabric-1.21.1`.
 
-`build` runs the pure domain harness and headless Minecraft GameTests.
-`./gradlew domainTest` runs only progression checks; `./gradlew runGameTest`
-runs the server integration checks. See [validation.md](docs/validation.md) for
+`build` runs the pure domain harness. `./gradlew domainTest` runs only progression
+checks; `./gradlew runGameTest` runs the headless server integration checks.
+See [validation.md](docs/validation.md) for
 the exact checks actually performed in this environment and remaining playtests.
 
 ## Development
@@ -124,3 +130,10 @@ the exact checks actually performed in this environment and remaining playtests.
 This is a functional alpha foundation, not a finished large content release.
 Visual feel, exploration frequency, survival pacing and multiplayer balance need
 human playtesting before a stable release.
+
+The expansion retains every original item ID, contract definition, rank threshold,
+and the first 18 completion positions. Eight deliveries are appended to the
+Artificer rotation, which now repeats every 14 orders. Saved delivery counts and
+ranks remain intact; returning Artificers with larger counts can receive a different
+next order because the late rotation is longer. Copperwake remains usable on its
+own; optional cross-mod contracts belong to the separate Convergence mod.

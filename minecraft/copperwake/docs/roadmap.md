@@ -2,6 +2,9 @@
 
 The first implementation provides the expedition → salvage → contract → gadget
 loop, a complete new realm, three authored landmarks and three combat silhouettes.
+Version 0.2 extends this loop to 22 authored deliveries and adds the Survey Flare
+and Field Repairer, with crafting, guidance, localization and server tests. The
+three existing constructs, dimension and structure templates retain their behavior.
 The next passes should add reasons to revisit these systems, without splitting the
 mod into disconnected feature lists.
 

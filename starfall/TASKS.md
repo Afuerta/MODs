@@ -1,7 +1,7 @@
 # Starfall task board
 
 This is the shared backlog for everyone working on Starfall (ChatGPT, Claude, and @Afuerta).
-Rules are in [`../AGENTS.md`](../AGENTS.md). The short version: claim a task by editing its row,
+Rules are in [`AGENTS.md`](AGENTS.md). The short version: claim a task by editing its row,
 work on a branch named `<agent>/<task-id>-<slug>` (for example `chatgpt/T01-starstone-building-set`),
 open one PR per task, keep CI green, and mark the row `done` in the same PR.
 
@@ -37,7 +37,7 @@ IDs (T01, T02, ...) are the reference.
 | T19 | JEI / EMI / Jade integration | 4 | M | T13, T03 | ChatGPT | blocked | |
 | T20 | Migrate JSON to data generators | 4 | L | T01–T07 merged | ChatGPT | blocked | |
 | T21 | Release pipeline (GitHub Releases on tag) | 4 | S | T00 | ChatGPT | ready | |
-| T23 | Fabric port + Convergence integration and expanded progression | Integration | XL | T00 | Codex + Astra | in progress | |
+| T23 | Fabric port + Convergence integration and expanded progression | Integration | XL | T00 | Codex + Astra | review | |
 | T22 | Stardust fires NeoForge's bonemeal event | 1 | S | T00 | ChatGPT | ready | |
 
 Suggested order for ChatGPT: T01 → T02 → T03 → T06 → T04 → T07 → T05 → T08 → T09 → T11 → T13 →

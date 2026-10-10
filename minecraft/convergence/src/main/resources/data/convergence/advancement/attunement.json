@@ -1,0 +1,36 @@
+{
+  "display": {
+    "icon": {
+      "id": "convergence:attunement_core"
+    },
+    "title": {
+      "translate": "advancement.convergence.attunement.title"
+    },
+    "description": {
+      "translate": "advancement.convergence.attunement.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "obtained": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "convergence:attunement_core"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obtained"
+    ]
+  ],
+  "parent": "convergence:root"
+}

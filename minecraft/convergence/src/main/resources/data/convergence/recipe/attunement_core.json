@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "RSR",
+    "SCS",
+    "RSR"
+  ],
+  "key": {
+    "R": {
+      "item": "riftbound:resonance_shard"
+    },
+    "S": {
+      "item": "starfall:star_shard"
+    },
+    "C": {
+      "item": "copperwake:charged_core"
+    }
+  },
+  "result": {
+    "id": "convergence:attunement_core",
+    "count": 1
+  }
+}

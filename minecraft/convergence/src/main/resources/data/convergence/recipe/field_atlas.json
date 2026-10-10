@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "minecraft:compass"
+    },
+    {
+      "item": "riftbound:verdant_echo"
+    },
+    {
+      "item": "copperwake:scrap"
+    },
+    {
+      "item": "starfall:star_shard"
+    }
+  ],
+  "result": {
+    "id": "convergence:field_atlas",
+    "count": 1
+  }
+}

@@ -35,6 +35,8 @@ public final class ModContent {
     public static final Item SPRING_BOOTS = gadget("spring_boots", GadgetItem.Action.SPRING, 1);
     public static final Item PATCH_KIT = gadget("patch_kit", GadgetItem.Action.HEAL, 16);
     public static final Item FOREMAN_SEAL = gadget("foreman_seal", GadgetItem.Action.SUMMON, 16);
+    public static final Item SURVEY_FLARE = gadget("survey_flare", GadgetItem.Action.SCAN, 1);
+    public static final Item FIELD_REPAIRER = gadget("field_repairer", GadgetItem.Action.REPAIR, 1);
     public static final Block SALVAGE_BENCH = block("salvage_bench", new Block(AbstractBlock.Settings.create()
             .strength(3.0f).nonOpaque().sounds(BlockSoundGroup.COPPER)) {
         private final VoxelShape shape = VoxelShapes.union(

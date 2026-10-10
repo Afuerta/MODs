@@ -1,0 +1,36 @@
+{
+  "display": {
+    "icon": {
+      "id": "convergence:tempered_focus"
+    },
+    "title": {
+      "translate": "advancement.convergence.focus.title"
+    },
+    "description": {
+      "translate": "advancement.convergence.focus.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "obtained": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "convergence:tempered_focus"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obtained"
+    ]
+  ],
+  "parent": "convergence:root"
+}

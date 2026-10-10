@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "starfall:starstone"
+  },
+  "result": {
+    "id": "starfall:polished_starstone",
+    "count": 1
+  }
+}

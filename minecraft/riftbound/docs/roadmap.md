@@ -17,18 +17,18 @@ Release criteria:
 - Multiplayer participants opt in and cannot claim rewards after withdrawing.
 - The README accurately distinguishes checks that ran from manual playtests still needed.
 
-## v0.2 — Make the arena a decision
+## v0.2 — Optional Convergence hazards implemented
 
-Add one original, readable trial rule per aspect, with clear warnings and recoverable counterplay. Prototype each rule independently and retain it only if it changes player positioning or teamwork rather than inflating health.
+The Convergence bridge can now opt Adept/Exalted trials into four original telegraphed hazards. These rules are implemented with bounded participant-only effects, a lag-safe warning clock, once-only bonus rewards, and cancellation on wave/encounter transitions. See `design.md` for exact shipped values. Client readability and balance still need playtesting.
 
-| Aspect | Proposed rule | Player response |
+| Aspect | Implemented rule | Player response |
 | --- | --- | --- |
 | Verdant | Telegraph a small area where roots briefly slow players | Keep a route open and pull enemies around roots |
 | Ember | Mark alternating safe and heated sectors without placing fire blocks | Move on the pulse instead of standing still |
-| Tidal | A visible current periodically pushes toward the anchor | Use terrain and time ranged attacks between pulses |
-| Hollow | Brief resonance marks reveal the next ranged attack lane | Read the tell and break line of sight |
+| Tidal | A marked ring periodically pushes toward the anchor | Use terrain and time ranged attacks between pulses |
+| Hollow | Purple marks reveal a lane that briefly inflicts Weakness | Read the tell and break line of sight |
 
-Introduce a per-world configuration for drop rate, enemy caps, arena radius, and cooldown once playtest data identifies necessary tuning. Add a compact trial HUD with wave, time, participant count, and clear withdrawal feedback. Any persistent cooldown format needs save/load migration and restart tests.
+Later tuning: introduce a per-world configuration for drop rate, enemy caps, arena radius, and cooldown once playtest data identifies necessary tuning. Add a compact trial HUD with wave, time, participant count, and clear withdrawal feedback. Any persistent cooldown format needs save/load migration and restart tests.
 
 ## v0.3 — Give exploration authored destinations
 

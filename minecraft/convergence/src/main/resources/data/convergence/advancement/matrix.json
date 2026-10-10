@@ -1,0 +1,36 @@
+{
+  "display": {
+    "icon": {
+      "id": "convergence:harmonic_matrix"
+    },
+    "title": {
+      "translate": "advancement.convergence.matrix.title"
+    },
+    "description": {
+      "translate": "advancement.convergence.matrix.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "obtained": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "convergence:harmonic_matrix"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obtained"
+    ]
+  ],
+  "parent": "convergence:concord"
+}

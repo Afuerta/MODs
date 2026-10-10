@@ -1,0 +1,149 @@
+import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
+
+plugins {
+    id 'fabric-loom' version '1.10.5'
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+base { archivesName = project.archives_base_name }
+
+repositories { mavenCentral() }
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'starfall_test'
+        enableGameTests = true
+        enableClientGameTests = false
+        eula = false
+    }
+}
+
+
+jar {
+    from('LICENSE') { rename { "${it}_${project.base.archivesName.get()}" } }
+}
+
+class PixelArt {
+    static BufferedImage parse(File file) {
+        Map<Character, Integer> palette = [:]
+        palette[('.' as char)] = 0
+        List<String> rows = []
+        String mode = null
+        file.readLines('UTF-8').eachWithIndex { String raw, int index ->
+            String line = raw.replaceAll(/\s+$/, '')
+            int lineNo = index + 1
+            if (line.isEmpty() || line.trim().startsWith('//')) {
+                return
+            }
+            if (line == 'palette:') {
+                mode = 'palette'
+                return
+            }
+            if (line == 'pixels:') {
+                mode = 'pixels'
+                return
+            }
+            if (mode == 'palette') {
+                String[] parts = line.trim().split(/\s+/)
+                if (parts.length != 2 || parts[0].length() != 1) {
+                    throw new GradleException("${file}:${lineNo}: palette lines look like 'a #RRGGBB' or 'a #RRGGBBAA'")
+                }
+                palette[(parts[0].charAt(0) as Character)] = parseColour(parts[1], file, lineNo)
+            } else if (mode == 'pixels') {
+                rows << line
+            } else {
+                throw new GradleException("${file}:${lineNo}: expected 'palette:' or 'pixels:' before anything else")
+            }
+        }
+        if (rows.isEmpty()) {
+            throw new GradleException("${file}: has no pixel rows")
+        }
+        int width = rows[0].length()
+        BufferedImage image = new BufferedImage(width, rows.size(), BufferedImage.TYPE_INT_ARGB)
+        rows.eachWithIndex { String row, int y ->
+            if (row.length() != width) {
+                throw new GradleException("${file}: pixel row ${y} is ${row.length()} wide, expected ${width}")
+            }
+            for (int x = 0; x < width; x++) {
+                Character key = row.charAt(x) as Character
+                Integer argb = palette[key]
+                if (argb == null) {
+                    throw new GradleException("${file}: pixel row ${y} uses '${key}' which is not in the palette")
+                }
+                image.setRGB(x, y, argb as int)
+            }
+        }
+        return image
+    }
+
+    static int parseColour(String text, File file, int lineNo) {
+        String hex = text.startsWith('#') ? text.substring(1) : text
+        if (hex.length() == 6) {
+            hex = hex + 'FF'
+        }
+        if (!(hex ==~ /[0-9A-Fa-f]{8}/)) {
+            throw new GradleException("${file}:${lineNo}: bad colour '${text}' (use #RRGGBB or #RRGGBBAA)")
+        }
+        long rgba = Long.parseLong(hex, 16)
+        int r = ((rgba >> 24) & 0xFF) as int
+        int g = ((rgba >> 16) & 0xFF) as int
+        int b = ((rgba >> 8) & 0xFF) as int
+        int a = (rgba & 0xFF) as int
+        return (a << 24) | (r << 16) | (g << 8) | b
+    }
+}
+
+def pixelArtDir = file('src/main/pixelart')
+def textureOutDir = layout.buildDirectory.dir('generated/pixelart')
+def modIdForTextures = 'starfall'
+
+var renderPixelArt = tasks.register('renderPixelArt') {
+    group = 'starfall'
+    description = 'Renders src/main/pixelart/**/*.px into PNG textures.'
+    inputs.dir(pixelArtDir)
+    inputs.property('rendererVersion', 1) // bump when PixelArt changes so outputs are rebuilt
+    outputs.dir(textureOutDir)
+    doLast {
+        System.setProperty('java.awt.headless', 'true')
+        File outRoot = textureOutDir.get().asFile
+        outRoot.deleteDir()
+        File textureRoot = new File(outRoot, "assets/${modIdForTextures}/textures")
+        int count = 0
+        pixelArtDir.eachFileRecurse(groovy.io.FileType.FILES) { File src ->
+            if (!src.name.endsWith('.px')) {
+                return
+            }
+            String rel = pixelArtDir.toPath().relativize(src.toPath()).toString().replace('\\', '/')
+            File dest = new File(textureRoot, rel.substring(0, rel.length() - 3) + '.png')
+            dest.parentFile.mkdirs()
+            ImageIO.write(PixelArt.parse(src), 'png', dest)
+            count++
+        }
+        logger.lifecycle("Rendered ${count} pixel-art textures")
+    }
+}
+sourceSets.main.resources.srcDir renderPixelArt

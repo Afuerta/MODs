@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "SFS",
+    "CMC",
+    "RFR"
+  ],
+  "key": {
+    "S": {
+      "item": "starfall:starsteel_ingot"
+    },
+    "F": {
+      "item": "convergence:confluence_filament"
+    },
+    "C": {
+      "item": "convergence:concordance"
+    },
+    "M": {
+      "item": "convergence:harmonic_matrix"
+    },
+    "R": {
+      "item": "copperwake:charged_core"
+    }
+  },
+  "result": {
+    "id": "convergence:stormward_sigil",
+    "count": 1
+  }
+}

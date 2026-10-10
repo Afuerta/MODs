@@ -1,0 +1,37 @@
+{
+  "parent": "copperwake:live_wire",
+  "display": {
+    "icon": {
+      "id": "copperwake:survey_flare"
+    },
+    "title": {
+      "translate": "advancement.copperwake.survey_signal.title"
+    },
+    "description": {
+      "translate": "advancement.copperwake.survey_signal.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "acquire": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "copperwake:survey_flare"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "acquire"
+    ]
+  ]
+}

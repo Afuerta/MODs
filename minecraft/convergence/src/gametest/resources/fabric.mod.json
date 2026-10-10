@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "convergence_test",
+  "version": "1.0.0",
+  "name": "Convergence GameTests",
+  "environment": "*",
+  "entrypoints": {"fabric-gametest": ["com.afuerta.convergence.ConvergenceGameTests"]},
+  "depends": {"convergence": "*", "fabric-gametest-api-v1": "*"}
+}

@@ -1,0 +1,36 @@
+{
+  "display": {
+    "icon": {
+      "id": "convergence:concordance"
+    },
+    "title": {
+      "translate": "advancement.convergence.concord.title"
+    },
+    "description": {
+      "translate": "advancement.convergence.concord.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "obtained": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "convergence:concordance"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obtained"
+    ]
+  ],
+  "parent": "convergence:attunement"
+}

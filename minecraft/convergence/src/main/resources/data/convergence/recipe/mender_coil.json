@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "FGF",
+    "TCT",
+    "FMF"
+  ],
+  "key": {
+    "F": {
+      "item": "convergence:confluence_filament"
+    },
+    "G": {
+      "item": "convergence:tempered_focus"
+    },
+    "T": {
+      "item": "copperwake:brass_gear"
+    },
+    "C": {
+      "item": "convergence:concordance"
+    },
+    "M": {
+      "item": "copperwake:charged_core"
+    }
+  },
+  "result": {
+    "id": "convergence:mender_coil",
+    "count": 1
+  }
+}

@@ -34,5 +34,9 @@ whether rain stops them, and the crater size.
 
 ## Building
 
-See [`../AGENTS.md`](../AGENTS.md). In short: JDK 21, then `gradle build` (or `./gradlew build`) in
+See [`AGENTS.md`](AGENTS.md). In short: JDK 21, then `gradle build` (or `./gradlew build`) in
 this folder. The jar lands in `build/libs/`.
+
+## Texture preview
+
+![Starfall block and item textures](docs/starfall-textures-preview.png)

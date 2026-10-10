@@ -8,9 +8,9 @@ Copperwake's salvage loop is **explore ruins → recover memory glass → gather
 | --- | --- | --- | --- |
 | 0–3 | Scrounger | Four introductory shipments, in order | 4 total deliveries |
 | 4–11 | Mechanist | Four shipments, repeated twice | 12 total deliveries |
-| 12 onward | Artificer | Six shipments, repeating indefinitely | Highest rank |
+| 12 onward | Artificer | Fourteen shipments, repeating indefinitely | Highest rank |
 
-Only the current rank's pool is selected. Every one of the fourteen contracts is reachable during the first eighteen completed-count positions (0 through 17). At a rank transition, selection starts at the first contract of the new pool. No random state or world clock participates in selection.
+Only the current rank's pool is selected. Every one of the 22 contracts is reachable during the first 26 completed-count positions (0 through 25). At a rank transition, selection starts at the first contract of the new pool. No random state or world clock participates in selection. Version 0.2 appends eight Artificer orders after the original six: it preserves the original 14 definitions, thresholds, completion counts, and the first 18 positions. Returning Artificers beyond those positions may see a different next order under the longer rotation; no rank or completed delivery is reset.
 
 ## Contract economy
 
@@ -32,10 +32,24 @@ All quantities below are per delivery. Each shipment requires both **scrap** and
 | Artificer | Audit the Tides | 30 | 5 | 12 prismarine crystals + 2 nautilus shells | 14 gears + 4 cores |
 | Artificer | The Midnight Inspector | 26 | 5 | 4 phantom membranes + 4 ender pearls | 14 gears + 3 cores |
 | Artificer | One More Shift | 32 | 6 | 12 obsidian + 2 diamonds | 16 gears + 4 cores |
+| Artificer | The Apiary Heat Exchange | 24 | 4 | 8 honeycomb + 2 copper blocks | 10 gears + 2 cores |
+| Artificer | Insulate the Switchyard | 20 | 4 | 16 string + 4 rabbit hides | 10 gears + 2 cores |
+| Artificer | Greenhouse Pressure Test | 26 | 4 | 12 cactus + 8 glass | 12 gears + 3 cores |
+| Artificer | Rails for the Return Shift | 28 | 5 | 24 rails + 8 redstone | 12 gears + 3 cores |
+| Artificer | The Ashen Regulator | 30 | 5 | 6 magma cream + 16 blackstone | 14 gears + 3 cores |
+| Artificer | Write the Invisible Sky | 24 | 4 | 8 glow ink sacs + 1 spyglass | 12 gears + 3 cores |
+| Artificer | Freight Beyond the Horizon | 32 | 6 | 24 end stone + 8 chorus fruit | 16 gears + 4 cores |
+| Artificer | The Silent Archive | 28 | 6 | 4 sculk + 8 candles | 14 gears + 4 cores |
 
 Gears are `copperwake:brass_gear`; cores are `copperwake:charged_core`. The boss's `copperwake:foreman_heart` is never a repeatable contract requirement. Equipment and boss progression are the Minecraft adapter's responsibility; this catalog does not lock equipment behind a delivery count.
 
 These costs are an initial balance pass. Later contracts deliberately send the player to the Nether, oceans, the Deep Dark, and nighttime encounters. Echo shards and packed ice can be expedition bottlenecks; delivery rank is an optional rewards path, and future playtesting should measure time-to-deliver before making equipment dependent on it.
+
+## Field devices
+
+Both new devices require Mechanist rank (four deliveries). Their recipes require guild gears and a charged core, while each activation consumes ordinary Scrap. Survey Flare reveals at most eight nearest hostiles inside a true 16-block sphere for 160 ticks; its cooldown is 200 ticks. An empty scan consumes nothing. It neither damages enemies nor marks passive creatures. Field Repairer restores at most 32 missing durability to the exact offhand stack for two Scrap, with a 100-tick cooldown; its own device must be in the main hand. Metadata and enchantments remain on that stack. Invalid targets, incomplete payment, and cooldown retries do not consume supplies. Durability is clamped to zero damage.
+
+These are utility choices rather than stronger weapons. The existing Arc Gauntlet remains six base damage against at most five visible hostiles within six blocks, at one Scrap and a 60-tick cooldown. No existing construct's combat behavior changes in this expansion.
 
 ### Preventing a closed crafting loop
 

@@ -2,7 +2,25 @@
 
 The current implementation is an initial development build, not a fully playtested release.
 
-## Automated checks
+## v0.2 expansion checks
+
+- Main and GameTest source compilation, remapped JAR/source packaging, and standalone Fabric runtime: passed.
+- Domain harness: 4,015 checks passed, including 243 new hazard timing/geometry checks.
+- New engine scenarios: failed Convergence activation preserves both offerings; complete Adept awards eight shards and one Concordance exactly once; Hollow warnings precede impacts and spare bystanders, with clean withdrawal. Additional engine cases exercise Verdant Slowness II, Tidal inward movement, and exact Ember magic damage despite Fire Resistance. All 12 Riftbound engine tests passed in the standalone module build. The coordinated four-mod runtime run is recorded separately by the root build.
+- Test-only bridge item fixtures are excluded from the release JAR and disabled when the real Convergence bridge is loaded.
+
+| New engine test | Verified behavior |
+| --- | --- |
+| Convergence rejected activation | Unsupported Initiate, insufficient Echo count, and obstructed arena preserve Echoes and cores |
+| Adept Convergence completion | All 26 enemies must die; exactly eight shards and one Concordance are delivered; retry/terminal ticks cannot duplicate them |
+| Hollow warning and cleanup | Full warning precedes Weakness, nearby unenrolled player stays unaffected, withdrawal cancels future pulses, existing effect expires |
+| Verdant roots | Actual Slowness II begins only after the Adept warning and abort cleans up enemies |
+| Tidal current | An eligible player in the marked ring receives actual inward velocity after warning |
+| Ember lanes | Two real enrolled players exercise exact three-HP magic damage despite Fire Resistance, followed by clean withdrawal |
+
+The test players use in-memory network channels. Fixtures explicitly call the living-player tick that a real network handler supplies, so status expiration and movement are tested rather than frozen.
+
+## v0.1 baseline automated checks
 
 - Java 21 domain compilation with `-Xlint:all`: passed.
 - Domain harness: 3,772 checks passed, including 192 aspect/tier/party/seed combinations, immutable plans, phase deadlines, timeout boundaries, duplicate and stale deaths, exact spawn acknowledgments, player withdrawal, once-only rewards, and cooldown/world reset.
@@ -38,3 +56,11 @@ Run `./gradlew runGameTest build` to repeat runtime tests, domain checks, and pa
 10. Equip/unequip each relic, switch quickly, and combine with stronger potions. Confirm effects expire naturally and other mods' effects are not stripped.
 
 This checklist is not evidence that these manual sessions have run.
+
+## Convergence manual checks
+
+- Install the bridge with Copperwake, Starfall, and Riftbound on both clients and server; craft the core through the real cross-mod recipe chain.
+- Observe all four warning patterns at different anchor elevations and camera settings. Warnings must remain readable with standard particle settings.
+- Run both tiers solo and in a party, stand inside and outside each marked zone, and compare enrolled players with nearby unready bystanders.
+- Move out of a Verdant patch after warning, escape Ember lanes, avoid the Tidal ring, and step aside from a Hollow lane. Check that magic Ember damage is still relevant with Fire Resistance.
+- Finish with full inventories, leave during a warning, die on an impact, destroy the anchor, or obstruct a later spawn. Confirm no delayed impacts or duplicate Concordance rewards remain.

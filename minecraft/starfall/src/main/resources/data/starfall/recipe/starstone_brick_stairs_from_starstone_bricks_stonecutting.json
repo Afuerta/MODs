@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "starfall:starstone_bricks"
+  },
+  "result": {
+    "id": "starfall:starstone_brick_stairs",
+    "count": 1
+  }
+}

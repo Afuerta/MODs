@@ -1,0 +1,36 @@
+{
+  "display": {
+    "icon": {
+      "id": "convergence:field_atlas"
+    },
+    "title": {
+      "translate": "advancement.convergence.root.title"
+    },
+    "description": {
+      "translate": "advancement.convergence.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "background": "minecraft:textures/block/deepslate_tiles.png"
+  },
+  "criteria": {
+    "obtained": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "convergence:field_atlas"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obtained"
+    ]
+  ]
+}

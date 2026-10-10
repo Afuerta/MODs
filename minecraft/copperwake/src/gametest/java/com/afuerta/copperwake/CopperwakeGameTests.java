@@ -7,6 +7,10 @@ import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.block.entity.StructureBlockBlockEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTable;
@@ -21,6 +25,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -30,6 +35,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionOptions;
 
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -70,7 +77,8 @@ public final class CopperwakeGameTests implements FabricGameTest {
         var recipes = context.getWorld().getRecipeManager();
         context.assertFalse(recipes.isErrored(), "Minecraft reported a recipe decoding error");
         for (String name : List.of("scrap", "salvage_bench", "foreman_seal", "patch_kit", "spring_boots",
-                "field_journal", "riveted_copper", "lumen_glass", "arc_gauntlet", "survey_key", "lumen_glass_from_heart")) {
+                "field_journal", "riveted_copper", "lumen_glass", "arc_gauntlet", "survey_key", "lumen_glass_from_heart",
+                "survey_flare", "field_repairer")) {
             var recipe = recipes.get(CopperwakeMod.id(name));
             context.assertTrue(recipe.isPresent(), "Recipe was rejected or missing: " + name);
             String output = name.equals("lumen_glass_from_heart") ? "lumen_glass" : name;
@@ -177,6 +185,133 @@ public final class CopperwakeGameTests implements FabricGameTest {
             GuildProgress.put(player, "cw_contracts", Integer.MAX_VALUE);
             GuildProgress.complete(player);
             context.assertEquals(Integer.MAX_VALUE, GuildProgress.completed(player), "Persistent counter overflowed");
+        } finally {
+            removePlayer(context, player);
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void expandedCatalogDeliversEveryContractInFixedOrder(TestContext context) {
+        var player = survivalPlayer(context);
+        var visited = new HashSet<String>();
+        try {
+            for (int completed = 0; completed < 26; completed++) {
+                context.assertEquals(completed, GuildProgress.completed(player), "Delivery progress was reset or reordered");
+                var contract = ContractCatalog.current(completed);
+                if (completed == 18) context.assertEquals("copperwake:apiary_exchange", contract.id(), "Expansion did not append after the original cycle");
+                visited.add(contract.id());
+                player.getInventory().clear();
+                fillRequirements(player, completed);
+                SalvageGuild.deliver(player);
+                context.assertEquals(completed + 1, GuildProgress.completed(player), "Full authored order failed to deliver: " + contract.id());
+                contract.requirements().forEach((id, amount) -> context.assertEquals(0,
+                        SalvageGuild.count(player, SalvageGuild.requiredItem(id)), "Unpaid contract input: " + id));
+                contract.rewards().forEach((id, amount) -> context.assertEquals(amount,
+                        SalvageGuild.count(player, SalvageGuild.requiredItem(id)), "Incorrect catalog reward: " + id));
+            }
+            context.assertEquals(22, visited.size(), "Not every authored contract was reached");
+            context.assertEquals("copperwake:deep_chime", ContractCatalog.current(26).id(), "Expanded Artificer cycle did not wrap in fixed order");
+        } finally {
+            removePlayer(context, player);
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void surveyFlareChecksRankFuelCapRadiusAndCooldownWithoutDamage(TestContext context) {
+        var player = survivalPlayer(context);
+        var mobs = new ArrayList<MobEntity>();
+        try {
+            // Separate this bounded scan from neighboring concurrently placed test structures.
+            player.refreshPositionAndAngles(player.getX(), player.getY() + 100, player.getZ(), 0, 0);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModContent.SURVEY_FLARE));
+            player.getInventory().insertStack(new ItemStack(ModContent.SCRAP, 2));
+            var result = ModContent.SURVEY_FLARE.use(context.getWorld(), player, Hand.MAIN_HAND);
+            context.assertEquals(ActionResult.FAIL, result.getResult(), "Scrounger activated Survey Flare");
+            context.assertEquals(2, SalvageGuild.count(player, ModContent.SCRAP), "Rank rejection consumed survey fuel");
+            GuildProgress.put(player, "cw_contracts", 4);
+            result = ModContent.SURVEY_FLARE.use(context.getWorld(), player, Hand.MAIN_HAND);
+            context.assertEquals(ActionResult.FAIL, result.getResult(), "Empty survey consumed fuel");
+            context.assertEquals(2, SalvageGuild.count(player, ModContent.SCRAP), "Empty survey spent Scrap");
+            for (int i = 0; i < 10; i++) {
+                var zombie = EntityType.ZOMBIE.create(context.getWorld());
+                context.assertTrue(zombie != null, "Zombie fixture creation failed");
+                zombie.setAiDisabled(true);
+                zombie.refreshPositionAndAngles(player.getX() + 1 + i * .1, player.getY(), player.getZ(), 0, 0);
+                context.assertTrue(context.getWorld().spawnEntity(zombie), "Hostile fixture did not spawn");
+                mobs.add(zombie);
+            }
+            var outside = EntityType.ZOMBIE.create(context.getWorld());
+            outside.setAiDisabled(true);
+            outside.refreshPositionAndAngles(player.getX() + 17, player.getY(), player.getZ(), 0, 0);
+            context.assertTrue(context.getWorld().spawnEntity(outside), "Radius fixture did not spawn");
+            mobs.add(outside);
+            var cow = EntityType.COW.create(context.getWorld());
+            cow.setAiDisabled(true);
+            cow.refreshPositionAndAngles(player.getX(), player.getY(), player.getZ() + 1, 0, 0);
+            context.assertTrue(context.getWorld().spawnEntity(cow), "Passive fixture did not spawn");
+            mobs.add(cow);
+            SalvageGuild.consume(player, ModContent.SCRAP, 2);
+            result = ModContent.SURVEY_FLARE.use(context.getWorld(), player, Hand.MAIN_HAND);
+            context.assertEquals(ActionResult.FAIL, result.getResult(), "Unfueled Survey Flare succeeded");
+            context.assertFalse(mobs.getFirst().hasStatusEffect(StatusEffects.GLOWING), "Unfueled scan marked a target");
+            player.getInventory().insertStack(new ItemStack(ModContent.SCRAP, 2));
+            result = ModContent.SURVEY_FLARE.use(context.getWorld(), player, Hand.MAIN_HAND);
+            context.assertEquals(ActionResult.SUCCESS, result.getResult(), "Fueled Survey Flare failed");
+            context.assertEquals(1, SalvageGuild.count(player, ModContent.SCRAP), "Survey did not cost exactly one Scrap");
+            for (int i = 0; i < 10; i++) {
+                context.assertEquals(i < 8, mobs.get(i).hasStatusEffect(StatusEffects.GLOWING), "Survey cap/nearest ordering mismatch " + i);
+                context.assertEquals(mobs.get(i).getMaxHealth(), mobs.get(i).getHealth(), "Survey dealt combat damage");
+            }
+            context.assertEquals(160, mobs.getFirst().getStatusEffect(StatusEffects.GLOWING).getDuration(), "Survey reveal duration changed");
+            context.assertFalse(outside.hasStatusEffect(StatusEffects.GLOWING), "Survey marked a target beyond its radius");
+            context.assertFalse(cow.hasStatusEffect(StatusEffects.GLOWING), "Survey marked a passive mob");
+            context.assertEquals(ActionResult.FAIL, ModContent.SURVEY_FLARE.use(context.getWorld(), player, Hand.MAIN_HAND).getResult(), "Survey ignored cooldown");
+            context.assertEquals(1, SalvageGuild.count(player, ModContent.SCRAP), "Cooldown retry spent Scrap");
+        } finally {
+            mobs.forEach(MobEntity::discard);
+            removePlayer(context, player);
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void fieldRepairerPaysAtomicallyPreservesMetadataAndClampsRepair(TestContext context) {
+        var player = survivalPlayer(context);
+        try {
+            var tool = new ItemStack(net.minecraft.item.Items.DIAMOND_PICKAXE);
+            tool.setDamage(100);
+            tool.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Field Test Pickaxe"));
+            player.setStackInHand(Hand.OFF_HAND, tool);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModContent.FIELD_REPAIRER));
+            player.getInventory().insertStack(new ItemStack(ModContent.SCRAP, 2));
+            context.assertEquals(ActionResult.FAIL, ModContent.FIELD_REPAIRER.use(context.getWorld(), player, Hand.MAIN_HAND).getResult(), "Scrounger repaired equipment");
+            context.assertEquals(100, tool.getDamage(), "Rank rejection changed durability");
+            GuildProgress.put(player, "cw_contracts", 4);
+            SalvageGuild.consume(player, ModContent.SCRAP, 1);
+            context.assertEquals(ActionResult.FAIL, ModContent.FIELD_REPAIRER.use(context.getWorld(), player, Hand.MAIN_HAND).getResult(), "Partial payment repaired equipment");
+            context.assertEquals(100, tool.getDamage(), "Partial payment changed durability");
+            context.assertEquals(1, SalvageGuild.count(player, ModContent.SCRAP), "Partial payment consumed its only Scrap");
+            player.getInventory().insertStack(new ItemStack(ModContent.SCRAP));
+            context.assertEquals(ActionResult.SUCCESS, ModContent.FIELD_REPAIRER.use(context.getWorld(), player, Hand.MAIN_HAND).getResult(), "Valid field repair failed");
+            context.assertEquals(68, tool.getDamage(), "Field repair must restore exactly 32 durability");
+            context.assertEquals(0, SalvageGuild.count(player, ModContent.SCRAP), "Field repair must consume exactly two Scrap");
+            context.assertEquals(Text.literal("Field Test Pickaxe"), tool.get(DataComponentTypes.CUSTOM_NAME), "Repair discarded equipment metadata");
+            context.assertEquals(ActionResult.FAIL, ModContent.FIELD_REPAIRER.use(context.getWorld(), player, Hand.MAIN_HAND).getResult(), "Repair ignored cooldown");
+            context.assertEquals(68, tool.getDamage(), "Cooldown retry changed durability");
+            player.getItemCooldownManager().set(ModContent.FIELD_REPAIRER, 0);
+            tool.setDamage(8);
+            player.getInventory().insertStack(new ItemStack(ModContent.SCRAP, 4));
+            context.assertEquals(ActionResult.SUCCESS, ModContent.FIELD_REPAIRER.use(context.getWorld(), player, Hand.MAIN_HAND).getResult(), "Small repair failed");
+            context.assertEquals(0, tool.getDamage(), "Repair underflowed below zero damage");
+            player.getItemCooldownManager().set(ModContent.FIELD_REPAIRER, 0);
+            context.assertEquals(ActionResult.FAIL, ModContent.FIELD_REPAIRER.use(context.getWorld(), player, Hand.MAIN_HAND).getResult(), "Undamaged equipment spent fuel");
+            context.assertEquals(2, SalvageGuild.count(player, ModContent.SCRAP), "Undamaged repair consumed Scrap");
+            player.setStackInHand(Hand.MAIN_HAND, tool);
+            player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModContent.FIELD_REPAIRER));
+            context.assertEquals(ActionResult.FAIL, ModContent.FIELD_REPAIRER.use(context.getWorld(), player, Hand.OFF_HAND).getResult(), "Offhand device repaired the wrong stack");
+            context.assertEquals(2, SalvageGuild.count(player, ModContent.SCRAP), "Wrong-hand repair consumed Scrap");
         } finally {
             removePlayer(context, player);
         }

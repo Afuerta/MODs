@@ -8,7 +8,7 @@ The world leaves echoes in the things that live there. Collect those echoes, bui
 
 The anchor makes the player's choice of location matter: a clearing is easy to navigate but exposed; a fortified arena takes work but makes future attempts safer. The mod rewards preparation without generating destructive terrain changes around an established base. Its identity comes from an exploration-to-encounter loop and mutually exclusive offhand choices, rather than a second ladder of vanilla tools.
 
-## Playable v0.1 loop
+## Base survival loop
 
 1. Explore and defeat ordinary hostile mobs. A player-attributed hostile kill has an 18% chance to drop the local aspect's echo. Trial enemies do not drop echoes. Resource recipes provide a dependable alternative when a needed biome is far away.
 2. Obtain all four echo aspects, amethyst, and obsidian to craft a Rift Anchor. Place it in a clear, reasonably level Overworld area with room to fight.
@@ -113,3 +113,23 @@ The lifecycle is `WARMUP → SPAWNING → ACTIVE → INTERMISSION`, repeating sp
 `TrialCooldowns` stores per-player expiry ticks. Exact expiry is ready; a shorter reapplication cannot shorten an existing cooldown. Deadline arithmetic saturates at `Long.MAX_VALUE` rather than wrapping. This ledger is an in-memory primitive; persistence, if added, belongs in the adapter and must use a clock that remains meaningful across restarts.
 
 Run `./gradlew domainTest` to execute the dependency-free `DomainTests` harness. It covers all aspect/tier/party combinations over several seeds, deterministic planning, immutability, lifecycle transitions, malformed spawn acknowledgment, stale mob events, withdrawal, reward claims, timeout boundaries, and cooldown boundaries. The harness throws on failed checks without requiring JVM assertions.
+
+## v0.2 Convergence integration
+
+The optional bridge adds one deliberate activation choice without changing existing Riftbound registry IDs or ordinary trial behavior. An initiator holding `convergence:attunement_core` in the offhand may begin an unlocked Adept or Exalted trial. Riftbound resolves both the core and reward by registry ID, without importing bridge classes or declaring a required bridge dependency. Missing Concordance registration rejects activation. Consume one core and the ordinary tier Echo cost only after all eligibility, cooldown, and arena preflights pass. A later combat/spawn failure is a failed paid attempt.
+
+Each eligible completion awards the original individual reward plus two shards on Adept or three on Exalted and one `convergence:concordance`. All deliveries use the same once-only `claimRewards()` result. Trial mobs still suppress normal loot/XP and cannot directly drop bridge rewards. The item roster and nine base recipes are unchanged.
+
+### Hazard contract
+
+`HazardSchedule` is a separate deterministic server-thread clock. It is constructed only for Convergence sessions and only for Adept/Exalted. Pass the active wave index during combat and -1 in other phases. A new wave has 60 ticks of grace. A `WARNING` creates a fixed `HazardZone` and emits its particles/message immediately; the impact deadline begins at that emission tick. Adept grants 60 warning ticks and Exalted 40. Successive impacts are separated by at least 200 ticks, including across wave changes. Delayed server polling never catches up missed attacks in a burst or skips a warning.
+
+Intermission cancels the current warning; it is never resumed in a later wave. `stop()` is permanent and cleanup removes the stored zone. Previously applied status effects expire after at most three seconds; cleanup does not remove unrelated potion effects. No hazard places fire, water, roots, or other blocks.
+
+`HazardZone` uses immutable anchor-relative geometry for both particle markers and impact checks. Zones are clipped to the 24-block arena. Verdant takes a participant position snapshot at warning time and clamps its center to 18 blocks from the anchor, then marks a three-block radius patch. Ember uses two parallel lanes three blocks wide, offset six blocks either side of the anchor. Tidal marks an annulus from six to eighteen blocks. Hollow marks one three-block-wide lane. Seed and pulse number select lane rotation. Participants can leave the marked area throughout the entire warning; marks do not follow them.
+
+The server adapter checks current eligibility, living state, dimension, game mode, and arena distance before each impact. Verdant applies Slowness II for 60 ticks, Hollow applies Weakness I for 60 ticks, Tidal applies 0.55 horizontal velocity inward plus a small upward lift, and Ember deals three/four HP of magic damage. Fire Resistance does not negate the resonance pulse. Any death caused by a pulse follows the ordinary withdrawal rules. Bystanders, mobs, and departed players are not affected.
+
+### Cross-mod progression boundary
+
+Copperwake salvage and Starfall exploration supply the bridge's crafting chain; Riftbound supplies a repeatable cooperative finale and Concordance. The bridge owns its item recipes and downstream equipment, avoiding circular class dependencies or duplicated registrations. Preserve base relic recipes and tier unlock storage so existing worlds can adopt the expansion incrementally. No imported worldgen or new dimension is required to start an ordinary trial.

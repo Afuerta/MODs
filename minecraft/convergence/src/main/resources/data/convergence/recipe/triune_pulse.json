@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "SFS",
+    "LCL",
+    "TMT"
+  ],
+  "key": {
+    "S": {
+      "item": "starfall:starsteel_ingot"
+    },
+    "F": {
+      "item": "convergence:tempered_focus"
+    },
+    "L": {
+      "item": "convergence:confluence_filament"
+    },
+    "C": {
+      "item": "convergence:concordance"
+    },
+    "T": {
+      "item": "copperwake:charged_core"
+    },
+    "M": {
+      "item": "convergence:harmonic_matrix"
+    }
+  },
+  "result": {
+    "id": "convergence:triune_pulse",
+    "count": 1
+  }
+}
