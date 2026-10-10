@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "copperwake:charged_core"
+    },
+    "title": {
+      "translate": "advancement.copperwake.live_wire.title"
+    },
+    "description": {
+      "translate": "advancement.copperwake.live_wire.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "acquire": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "copperwake:charged_core"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "experience": 25
+  },
+  "parent": "copperwake:paid_in_brass"
+}

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GMG",
+    "CCC",
+    "GMG"
+  ],
+  "key": {
+    "G": {
+      "item": "copperwake:brass_gear"
+    },
+    "M": {
+      "item": "copperwake:memory_glass"
+    },
+    "C": {
+      "item": "copperwake:charged_core"
+    }
+  },
+  "result": {
+    "id": "copperwake:foreman_seal",
+    "count": 1
+  }
+}

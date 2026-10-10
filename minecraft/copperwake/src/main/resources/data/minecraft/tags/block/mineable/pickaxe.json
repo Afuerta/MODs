@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "copperwake:salvage_bench",
+    "copperwake:riveted_copper",
+    "copperwake:lumen_glass"
+  ]
+}

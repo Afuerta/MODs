@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GGG",
+    "GHG",
+    "GGG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "H": {
+      "item": "copperwake:foreman_heart"
+    }
+  },
+  "result": {
+    "id": "copperwake:lumen_glass",
+    "count": 16
+  }
+}

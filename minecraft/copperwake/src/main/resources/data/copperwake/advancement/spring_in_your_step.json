@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "copperwake:spring_boots"
+    },
+    "title": {
+      "translate": "advancement.copperwake.spring_in_your_step.title"
+    },
+    "description": {
+      "translate": "advancement.copperwake.spring_in_your_step.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "acquire": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "copperwake:spring_boots"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "experience": 35
+  },
+  "parent": "copperwake:live_wire"
+}

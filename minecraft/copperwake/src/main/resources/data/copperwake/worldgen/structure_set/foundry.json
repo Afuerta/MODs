@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "copperwake:foundry",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 39014733,
+    "spacing": 38,
+    "separation": 16,
+    "spread_type": "linear"
+  }
+}

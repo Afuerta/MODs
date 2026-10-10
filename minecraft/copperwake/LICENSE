@@ -1,0 +1,7 @@
+Copyright (c) 2026 Afuerta. All rights reserved.
+
+This reservation applies to original Copperwake source, models, and structures.
+Minecraft and Fabric dependencies retain their respective licenses. References
+to Minecraft textures load those assets from the player's game installation;
+the game assets are not redistributed here. The Gradle wrapper retains its
+Apache License 2.0 licensing.
