@@ -293,6 +293,14 @@ class Validator:
         self.recipes()
         self.loot_and_tags()
         self.localization_and_advancements()
+        lang_path = self.assets / "lang/en_us.json"
+        lang = self.read(lang_path)
+        for suffix in ("reinforcements", "reinforcements_arrived", "pincer", "standard_bearer"):
+            key = "message.riftbound.encounter." + suffix
+            self.expect(isinstance(lang.get(key), str) and bool(lang[key].strip()), lang_path,
+                        f"missing encounter telegraph {key}")
+        self.expect(bool(lang.get("entity.riftbound.standard_bearer")), lang_path,
+                    "missing priority target name")
         fabric_path = self.resources / "fabric.mod.json"
         if fabric_path.exists():
             fabric = self.read(fabric_path)

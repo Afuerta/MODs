@@ -20,6 +20,17 @@ BUILDING_BLOCKS = {
     "polished_starstone", "polished_starstone_stairs", "polished_starstone_slab",
     "polished_starstone_wall", "chiseled_starstone",
 }
+ARMOR_PATTERNS = {
+    "helmet": ["SSS", "S S"],
+    "chestplate": ["S S", "SSS", "SSS"],
+    "leggings": ["SSS", "S S", "S S"],
+    "boots": ["S S", "S S"],
+}
+ARMOR_SLOTS = {"helmet": "head_armor", "chestplate": "chest_armor",
+               "leggings": "leg_armor", "boots": "foot_armor"}
+ARMOR_LAYERS = {PIXEL_ART / f"models/armor/starsteel_layer_{layer}.px" for layer in (1, 2)}
+TRIM_MATERIALS = ("quartz", "iron", "netherite", "redstone", "copper", "gold",
+                  "emerald", "diamond", "lapis", "amethyst")
 ERRORS: list[str] = []
 
 
@@ -94,18 +105,107 @@ def validate_pixel_art(path: pathlib.Path) -> tuple[int, int]:
                 rows.append(line)
             else:
                 raise ValueError(f"line {line_number}: expected palette or pixels header")
-        if not rows or len(rows[0]) != 16 or len(rows) % 16:
+        armor_layer = path in ARMOR_LAYERS
+        expected_width = 64 if armor_layer else 16
+        if armor_layer:
+            if len(rows) != 32 or len(rows[0]) != 64:
+                raise ValueError("humanoid armor layers must be exactly 64 x 32 pixels")
+        elif not rows or len(rows[0]) != 16 or len(rows) % 16:
             raise ValueError("textures must be 16 pixels wide and whole 16-pixel frames tall")
         for index, row in enumerate(rows, 1):
-            if len(row) != 16 or set(row) - palette:
+            if len(row) != expected_width or set(row) - palette:
                 raise ValueError(f"pixel row {index}: width or undefined colour")
-        if len(rows) > 16:
+        if len(rows) > 16 and not armor_layer:
             metadata = ASSETS / "textures" / path.relative_to(PIXEL_ART).with_suffix(".png.mcmeta")
             if not metadata.is_file():
                 raise ValueError("animated texture has no .png.mcmeta")
     except (ValueError, OSError) as exc:
         fail(f"{path.relative_to(ROOT)}: {exc}")
-    return (16, len(rows))
+    return (len(rows[0]) if rows else 0, len(rows))
+
+
+def validate_starsteel_armor(documents: dict[pathlib.Path, dict], language: dict) -> None:
+    """Check armor acquisition, enchanting, trim models and vanilla humanoid UVs."""
+    for piece, pattern in ARMOR_PATTERNS.items():
+        name = f"starsteel_{piece}"
+        identifier = f"starfall:{name}"
+        model = documents.get(ASSETS / f"models/item/{name}.json", {})
+        if (model.get("parent") != "minecraft:item/generated"
+                or model.get("textures") != {"layer0": f"starfall:item/{name}"}):
+            fail(f"armor {piece}: missing generated item model or own base texture")
+        overrides = [{"predicate": {"trim_type": (i + 1) / 10},
+                      "model": f"starfall:item/{name}_{trim}_trim"}
+                     for i, trim in enumerate(TRIM_MATERIALS)]
+        if model.get("overrides") != overrides:
+            fail(f"armor {piece}: inventory model must display all ten vanilla trim materials")
+        for trim in TRIM_MATERIALS:
+            trim_model = documents.get(ASSETS / f"models/item/{name}_{trim}_trim.json", {})
+            if trim_model.get("textures") != {
+                    "layer0": f"starfall:item/{name}",
+                    "layer1": f"minecraft:trims/items/{piece}_trim_{trim}"}:
+                fail(f"armor {piece}: invalid {trim} inventory trim model")
+        recipe = documents.get(DATA / f"recipe/{name}.json", {})
+        if (recipe.get("type") != "minecraft:crafting_shaped"
+                or recipe.get("pattern") != pattern
+                or recipe.get("key") != {"S": {"item": "starfall:starsteel_ingot"}}
+                or recipe.get("result") != {"id": identifier, "count": 1}):
+            fail(f"armor {piece}: needs its standard Starsteel Ingot crafting recipe")
+        unlock = documents.get(DATA / f"advancement/recipes/{name}.json", {})
+        has_ingot = unlock.get("criteria", {}).get("has_starsteel_ingot", {})
+        if (unlock.get("parent") != "minecraft:recipes/root"
+                or has_ingot != {"trigger": "minecraft:inventory_changed",
+                                 "conditions": {"items": [{"items": "starfall:starsteel_ingot"}]}}
+                or unlock.get("rewards", {}).get("recipes") != [identifier]
+                or unlock.get("requirements") != [["has_starsteel_ingot", "has_the_recipe"]]):
+            fail(f"armor {piece}: needs an independent unlock on obtaining an ingot")
+        for tag in (ARMOR_SLOTS[piece], f"enchantable/{ARMOR_SLOTS[piece]}",
+                    "enchantable/armor", "enchantable/durability",
+                    "enchantable/equippable", "trimmable_armor"):
+            values = documents.get(RESOURCES / f"data/minecraft/tags/item/{tag}.json", {})
+            if values.get("replace") is not False or identifier not in values.get("values", []):
+                fail(f"armor {piece}: missing additive Minecraft tag {tag}")
+        if f"item.starfall.{name}" not in language:
+            fail(f"armor {piece}: missing English name")
+
+    goal = documents.get(DATA / "advancement/forged_in_starlight.json", {})
+    expected_criteria = {piece: {"trigger": "minecraft:inventory_changed",
+                                "conditions": {"items": [{"items": f"starfall:starsteel_{piece}"}]}}
+                         for piece in ARMOR_PATTERNS}
+    if (goal.get("parent") != "starfall:starsteel" or goal.get("criteria") != expected_criteria
+            or goal.get("requirements") != [[piece] for piece in ARMOR_PATTERNS]
+            or goal.get("rewards") != {"experience": 50}):
+        fail("armor: full-set advancement must require all four pieces and award 50 XP once")
+    for key in ("item.starfall.starsteel_armor.tooltip", "item.starfall.starsteel_armor.bonus"):
+        if key not in language:
+            fail(f"armor: missing language key {key}")
+
+    # Standard 1.21.1 humanoid cuboid nets. Outside these rectangles is unused atlas space.
+    uv_regions = [(8, 0, 16, 8), (0, 8, 32, 8),                 # head
+                  (4, 16, 8, 4), (0, 20, 16, 12),             # leg (mirrored pair)
+                  (20, 16, 16, 4), (16, 20, 24, 12),          # body
+                  (44, 16, 8, 4), (40, 20, 16, 12)]           # arm (mirrored pair)
+    used_uv = {(x, y) for rx, ry, width, height in uv_regions
+               for x in range(rx, rx + width) for y in range(ry, ry + height)}
+    for path in sorted(ARMOR_LAYERS):
+        if not path.is_file():
+            fail(f"armor: missing layer {path.name}")
+            continue
+        rows = path.read_text().partition("pixels:\n")[2].splitlines()
+        if len(rows) != 32 or any(len(row) != 64 for row in rows):
+            continue  # The parser gives the precise dimension error.
+        if any(char != "." and (x, y) not in used_uv
+               for y, row in enumerate(rows) for x, char in enumerate(row)):
+            fail(f"armor {path.name}: paint outside the humanoid UV faces")
+        # Each visible front/back region must carry art. The open helmet visor and
+        # upper boot cutouts intentionally remain transparent.
+        regions = ([(8, 8, 8, 8), (24, 8, 8, 8), (20, 20, 8, 12), (32, 20, 8, 12),
+                    (44, 20, 4, 12), (52, 20, 4, 12), (4, 26, 4, 6), (12, 26, 4, 6)]
+                   if path.stem.endswith("_1") else
+                   [(20, 28, 8, 4), (32, 28, 8, 4), (4, 20, 4, 12), (12, 20, 4, 12)])
+        for x, y, width, height in regions:
+            if not any(rows[row][column] != "." for row in range(y, y + height)
+                       for column in range(x, x + width)):
+                fail(f"armor {path.name}: missing visible face at {x}, {y}")
 
 
 def validate_star_compass(documents: dict[pathlib.Path, dict], language: dict) -> None:
@@ -226,6 +326,7 @@ def main() -> int:
 
     language = documents.get(ASSETS / "lang/en_us.json", {})
     validate_star_compass(documents, language)
+    validate_starsteel_armor(documents, language)
     pickaxe_tag = documents.get(RESOURCES / "data/minecraft/tags/block/mineable/pickaxe.json", {})
     for block in BUILDING_BLOCKS:
         for path in (ASSETS / "blockstates" / f"{block}.json",

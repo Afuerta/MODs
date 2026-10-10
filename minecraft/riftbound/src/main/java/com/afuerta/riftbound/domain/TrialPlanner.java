@@ -37,7 +37,7 @@ public final class TrialPlanner {
                 long mixed = mix(state);
                 mobs.add(pool.get((int) Long.remainderUnsigned(mixed, pool.size())));
             }
-            waves.add(new WavePlan(wave, mobs));
+            waves.add(new WavePlan(wave, mobs, EncounterPattern.forWave(tier, wave)));
         }
         return new TrialPlan(aspect, tier, participants, seed, waves,
                 new TrialReward(tier.resonanceReward()), WARMUP_TICKS, INTERMISSION_TICKS,

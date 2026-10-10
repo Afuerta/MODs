@@ -44,5 +44,10 @@
   "message.riftbound.hazard.verdant": "[Riftbound] Verdant roots are forming! Leave the green marked patch before it slows you.",
   "message.riftbound.hazard.ember": "[Riftbound] Ember resonance is surging! Leave the two flame-marked lanes; the pulse deals magic damage.",
   "message.riftbound.hazard.tidal": "[Riftbound] A tidal current is gathering! Leave the splash-marked ring or be pulled inward.",
-  "message.riftbound.hazard.hollow": "[Riftbound] Hollow resonance is gathering! Leave the purple marked lane before it weakens you."
+  "message.riftbound.hazard.hollow": "[Riftbound] Hollow resonance is gathering! Leave the purple marked lane before it weakens you.",
+  "message.riftbound.encounter.reinforcements": "[Riftbound] Reinforcements: defeat the vanguard, then watch the marked gates. Reserves arrive 5 seconds after combat begins.",
+  "message.riftbound.encounter.reinforcements_arrived": "[Riftbound] The reserves have arrived! Every enemy must fall before the next wave.",
+  "message.riftbound.encounter.pincer": "[Riftbound] Pincer rush: enemies enter from opposite sides with Speed I for 4 seconds. Keep an escape route open.",
+  "message.riftbound.encounter.standard_bearer": "[Riftbound] Standard guard: the glowing Standard-bearer grants nearby allies Resistance I. Defeat it first or draw its allies more than 8 blocks away.",
+  "entity.riftbound.standard_bearer": "Rift Standard-bearer"
 }

@@ -1,0 +1,36 @@
+{
+  "parent": "convergence:focus",
+  "display": {
+    "icon": {
+      "id": "convergence:astral_infuser"
+    },
+    "title": {
+      "translate": "advancement.convergence.infuser.title"
+    },
+    "description": {
+      "translate": "advancement.convergence.infuser.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "obtained": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "convergence:astral_infuser"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obtained"
+    ]
+  ]
+}

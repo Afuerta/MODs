@@ -7,6 +7,7 @@ All architecture is original voxel code, with Minecraft's vanilla block palette.
 from __future__ import annotations
 
 import gzip
+from collections import deque
 import io
 import json
 from pathlib import Path
@@ -72,6 +73,7 @@ class Structure:
     def __init__(self, name, size):
         self.name, self.size = name, size
         self.blocks, self.entities, self.loot_positions = {}, [], []
+        self.entrance = None
 
     def block(self, x, y, z, name, properties=None, nbt=None):
         assert all(0 <= n < bound for n, bound in zip((x, y, z), self.size)), (self.name, x, y, z)
@@ -110,7 +112,7 @@ class Structure:
             }),
         })
 
-    def save(self):
+    def encoded(self):
         palette, indexes, blocks = [], {}, []
         for position, (state, nbt) in sorted(self.blocks.items(), key=lambda b: (b[0][1], b[0][2], b[0][0])):
             key = json.dumps(state, sort_keys=True)
@@ -128,6 +130,9 @@ class Structure:
             "blocks": (LIST, (COMPOUND, blocks)),
             "entities": (LIST, (COMPOUND, self.entities)),
         }
+        # Positive jigsaw depth is required for the start piece in 1.21.1.
+        # No connectors means that depth one remains a single-piece landmark.
+        assert all(state["Name"][1] != "minecraft:jigsaw" for state in palette), (self.name, "unexpected jigsaw connector")
         encoded = bytes([COMPOUND]) + string("") + encode_payload(COMPOUND, root)
         # Round-trip the entire binary tag tree, not just its header or gzip stream.
         stream = io.BytesIO(encoded)
@@ -139,10 +144,55 @@ class Structure:
             x, y, z = position
             above = self.blocks.get((x, y + 1, z))
             assert above is None or above[0]["Name"][1] == "minecraft:air", (self.name, "blocked loot", position)
+            loot = self.blocks[position][1]["LootTable"][1].removeprefix("copperwake:")
+            assert (ROOT / "src/main/resources/data/copperwake/loot_table" / (loot + ".json")).is_file(), (self.name, "missing loot", loot)
+        if self.entrance is not None:
+            self.validate_access()
+        return encoded
+
+    def validate_access(self):
+        """Conservative two-block headroom route check with one-block steps/ladders.
+
+        This checks authored geometry, not Minecraft pathfinding or naturally
+        generated slopes. Every cache must have a reachable adjacent opening.
+        """
+        def name(pos):
+            return self.blocks.get(pos, ({"Name": (STRING, "minecraft:air")}, None))[0]["Name"][1].removeprefix("minecraft:")
+
+        def clear(pos):
+            return name(pos) in {"air", "ladder", "rail"}
+
+        def walkable(pos):
+            x, y, z = pos
+            if not (0 <= x < self.size[0] and 1 <= y < self.size[1] - 1 and 0 <= z < self.size[2]):
+                return False
+            below = name((x, y - 1, z))
+            supported = below not in {"air", "water", "rail", "ladder", "chain"} and not below.endswith(("fence", "bars"))
+            return clear(pos) and clear((x, y + 1, z)) and (supported or name(pos) == "ladder")
+
+        assert walkable(self.entrance), (self.name, "blocked entrance", self.entrance)
+        queue, reached = deque([self.entrance]), {self.entrance}
+        while queue:
+            x, y, z = queue.popleft()
+            candidates = [(x + dx, y + dy, z + dz) for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)) for dy in (-1, 0, 1)]
+            if name((x, y, z)) == "ladder":
+                candidates += [(x, y - 1, z), (x, y + 1, z)]
+            for pos in candidates:
+                if pos not in reached and walkable(pos):
+                    reached.add(pos)
+                    queue.append(pos)
+        for x, y, z in self.loot_positions:
+            assert any((x + dx, y, z + dz) in reached for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1))), (self.name, "unreachable barrel", (x, y, z))
+        for entity in self.entities:
+            position = tuple(entity["blockPos"][1][1])
+            assert position in reached, (self.name, "guard has no reachable floor/headroom", position)
+
+    def save(self):
+        encoded = self.encoded()
         OUT.mkdir(parents=True, exist_ok=True)
         output = OUT / (self.name + ".nbt")
         output.write_bytes(gzip.compress(encoded, compresslevel=9, mtime=0))
-        print(f"{self.name}: {self.size}, {len(blocks)} blocks, {len(palette)} states, "
+        print(f"{self.name}: {self.size}, {len(self.blocks)} blocks, "
               f"{len(self.loot_positions)} barrels, {len(self.entities)} guards, {output.stat().st_size} bytes")
 
 
@@ -301,6 +351,162 @@ def foundry():
     return s
 
 
+def siphon_gardens():
+    s = Structure("siphon_gardens", (35, 19, 31))
+    s.fill(0, 0, 0, 34, 0, 30, "mossy_stone_bricks")
+    s.fill(0, 1, 0, 34, 18, 30, "air")
+    s.fill(13, 0, 0, 21, 0, 30, "stone_bricks")
+    s.fill(1, 0, 12, 33, 0, 19, "stone_bricks")
+    # Four shallow cisterns surround an arched, glass-roofed pump gallery.
+    # Sealed still water stays inside the basins; the expedition route is dry.
+    for x0 in (2, 24):
+        for z0 in (3, 20):
+            s.fill(x0, 0, z0, x0 + 8, 0, z0 + 8, "stone_bricks")
+            for y in (1, 2):
+                s.ring(x0, z0, x0 + 8, z0 + 8, y, "mossy_stone_bricks")
+            s.fill(x0 + 1, 1, z0 + 1, x0 + 7, 1, z0 + 7, "water", {"level": "0"})
+            for x, z in ((x0, z0), (x0 + 8, z0), (x0, z0 + 8), (x0 + 8, z0 + 8)):
+                s.fill(x, 3, z, x, 5, z, "waxed_oxidized_cut_copper")
+                s.block(x, 6, z, "lantern", {"hanging": "false", "waterlogged": "false"})
+    for x in (12, 22):
+        s.fill(x, 1, 4, x, 7, 27, "green_stained_glass")
+        for z in (4, 11, 20, 27):
+            s.fill(x, 1, z, x, 11, z, "waxed_weathered_cut_copper")
+    # A greenhouse vault, visibly lower and broader than the relay mast.
+    for x in range(12, 23):
+        height = 10 + (5 - abs(x - 17)) // 2
+        s.fill(x, height, 4, x, height, 27, "green_stained_glass")
+        for z in (4, 11, 20, 27):
+            s.block(x, height, z, "waxed_oxidized_cut_copper")
+    # Four freestanding piers hold a transverse aqueduct and two dry service lanes.
+    for x in (3, 8, 26, 31):
+        s.fill(x, 1, 15, x, 8, 16, "stone_bricks")
+        for y in (3, 6):
+            s.fill(x - 1, y, 15, x + 1, y, 16, "mossy_stone_bricks")
+    s.fill(1, 9, 12, 33, 9, 19, "stone_bricks")
+    for z in (12, 19):
+        s.fill(1, 10, z, 33, 10, z, "dark_oak_fence")
+    # The southern service lane has two full blocks of headroom through the vault.
+    s.fill(1, 10, 18, 33, 11, 18, "air")
+    s.fill(1, 10, 13, 33, 11, 13, "air")
+    for z in (14, 17):
+        s.fill(1, 10, z, 33, 10, z, "waxed_weathered_cut_copper")
+    s.fill(1, 10, 15, 33, 10, 16, "water", {"level": "0"})
+    for x in (1, 33):
+        s.fill(x, 10, 14, x, 10, 17, "waxed_weathered_cut_copper")
+    # A central machine, backed ladder and landing connect both ground caches
+    # to the elevated inspection cache without blocks or flight.
+    s.fill(18, 1, 20, 20, 4, 22, "orange_terracotta")
+    s.fill(19, 2, 19, 20, 3, 19, "green_stained_glass")
+    s.fill(19, 2, 20, 20, 3, 20, "shroomlight")
+    s.fill(20, 5, 21, 20, 8, 21, "waxed_oxidized_cut_copper")
+    s.fill(13, 9, 18, 16, 9, 26, "dark_oak_planks")
+    # Clear the vault above this landing and its fence gate. The backed ladder
+    # exits directly onto the dry inspection lane, rather than onto the roof.
+    s.fill(14, 10, 18, 16, 11, 26, "air")
+    s.fill(13, 1, 24, 13, 11, 24, "stone_bricks")
+    for y in range(1, 12):
+        s.block(14, y, 24, "ladder", {"facing": "east", "waterlogged": "false"})
+    s.barrel(14, 1, 7, "salvage_yard")
+    s.barrel(20, 1, 25, "siphon_gardens")
+    # Keep the elevated cache off the rail and on the clear service lane.
+    s.barrel(31, 10, 18, "siphon_gardens")
+    s.guard(16, 1, 12, "rust_mite")
+    s.guard(15, 1, 23, "rust_mite")
+    s.guard(20, 1, 11, "coil_sentry")
+    s.guard(27, 10, 18, "coil_sentry")
+    s.entrance = (17, 1, 0)
+    return s
+
+
+def switchyard_depot():
+    s = Structure("switchyard_depot", (39, 17, 35))
+    s.fill(0, 0, 0, 38, 0, 34, "granite")
+    s.fill(0, 1, 0, 38, 16, 34, "air")
+    # Five freight lines fan across a broad apron. Raised loading islands
+    # preserve clear passages between the office, bridge and cargo sheds.
+    for x in (6, 12, 19, 26, 32):
+        s.fill(x - 1, 0, 2, x + 1, 0, 33, "gravel")
+        for z in range(2, 34):
+            s.block(x, 1, z, "rail", {"shape": "north_south", "waterlogged": "false"})
+    for x in (8, 14, 22, 28):
+        s.fill(x, 1, 7, x + 2, 1, 23, "polished_andesite")
+        for i in range(3):
+            s.block(x + i, 1, 6, "stone_brick_stairs", {"facing": "south", "half": "bottom", "shape": "straight", "waterlogged": "false"})
+    # Two-storey dispatch office with a tall serrated roof and upper bridge exit.
+    s.fill(3, 1, 24, 15, 10, 32, "orange_terracotta")
+    s.fill(4, 1, 25, 14, 9, 31, "air")
+    s.fill(4, 6, 25, 14, 6, 31, "dark_oak_planks")
+    s.fill(8, 1, 24, 10, 3, 25, "air")
+    s.fill(8, 7, 24, 10, 9, 25, "air")
+    for x in (3, 15):
+        for z in (25, 29):
+            s.fill(x, 3, z, x, 4, z + 1, "cyan_stained_glass")
+            s.fill(x, 8, z, x, 9, z + 1, "cyan_stained_glass")
+    for x in range(3, 16):
+        height = 11 + (6 - abs(x - 9)) // 2
+        s.fill(x, 10, 24, x, height, 32, "deepslate_tiles")
+        if x in (8, 9, 10):
+            s.fill(x, height, 27, x, height, 29, "cyan_stained_glass")
+    for y in range(1, 9):
+        s.block(4, y, 29, "ladder", {"facing": "east", "waterlogged": "false"})
+    # Dry, fenced signal bridge spans all five lines. A stair connects it
+    # to the upper office; nobody needs the Spring Boots to reach its cache.
+    for x in (3, 35):
+        s.fill(x, 1, 17, x, 7, 20, "polished_deepslate")
+    s.fill(3, 7, 17, 35, 7, 20, "dark_oak_planks")
+    for z in (17, 20):
+        s.fill(3, 8, z, 35, 8, z, "iron_bars")
+    s.fill(8, 6, 21, 10, 6, 24, "dark_oak_planks")
+    s.fill(8, 8, 20, 10, 9, 20, "air")
+    s.fill(8, 7, 21, 10, 7, 21, "stone_brick_stairs", {"facing": "north", "half": "bottom", "shape": "straight", "waterlogged": "false"})
+    # Signal mast stands at the bridge edge, leaving both walking lanes open.
+    s.fill(19, 8, 17, 19, 15, 17, "polished_deepslate")
+    for x in (17, 21):
+        s.fill(x, 12, 17, x, 14, 17, "yellow_terracotta")
+        s.block(x, 13, 16, "red_stained_glass")
+        s.block(x, 13, 17, "shroomlight")
+    s.fill(17, 15, 17, 21, 15, 17, "exposed_cut_copper")
+    # Open loading canopy and raised cargo platform; cargo is decorative stone
+    # and wood rather than mineral blocks that swamp the existing economy.
+    s.fill(22, 1, 25, 34, 1, 31, "polished_andesite")
+    for x in (21, 35):
+        for z in (25, 32):
+            s.fill(x, 1, z, x, 8, z, "stripped_dark_oak_log")
+    for x in range(20, 37):
+        height = 8 + (8 - abs(x - 28)) // 3
+        s.fill(x, height, 24, x, height, 33, "waxed_weathered_cut_copper_slab", {"type": "bottom", "waterlogged": "false"})
+    s.fill(26, 2, 29, 29, 3, 31, "dark_oak_planks")
+    s.fill(30, 2, 30, 32, 4, 31, "polished_andesite")
+    for x in (24, 33):
+        s.block(x, 5, 26, "lantern", {"hanging": "false", "waterlogged": "false"})
+    s.barrel(13, 1, 30, "salvage_yard")
+    s.barrel(13, 7, 30, "switchyard_depot")
+    s.barrel(23, 2, 27, "switchyard_depot")
+    s.guard(18, 1, 10, "rust_mite")
+    s.guard(10, 2, 15, "rust_mite")
+    s.guard(29, 2, 23, "coil_sentry")
+    s.guard(12, 7, 27, "coil_sentry")
+    s.guard(30, 8, 19, "coil_sentry")
+    s.entrance = (18, 1, 0)
+    return s
+
+
+def authored_structures():
+    return (salvage_yard(), relay_tower(), foundry(), siphon_gardens(), switchyard_depot())
+
+
+def validate_committed():
+    for authored in authored_structures():
+        expected = authored.encoded()
+        path = OUT / (authored.name + ".nbt")
+        assert path.is_file(), (authored.name, "missing committed template")
+        actual = path.read_bytes()
+        assert gzip.decompress(actual) == expected, (authored.name, "committed NBT differs from authored geometry")
+        assert actual == gzip.compress(expected, compresslevel=9, mtime=0), (authored.name, "non-deterministic gzip encoding")
+    print("Structure validation passed: five complete NBT round-trips, deterministic committed bytes, loot links, and new landmark entrance/cache/guard access.")
+
+
 if __name__ == "__main__":
-    for authored in (salvage_yard(), relay_tower(), foundry()):
+    for authored in authored_structures():
         authored.save()

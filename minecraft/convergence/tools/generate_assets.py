@@ -245,3 +245,85 @@ for name, item, parent, title, description in ADVANCEMENTS:
     put_json(RESOURCES / f'data/convergence/advancement/{name}.json', advancement)
 put_json(RESOURCES / 'assets/convergence/lang/en_us.json', LANG)
 print(f'Generated {len(NAMES)} sprites/models, 7 recipes, {len(ADVANCEMENTS)} visible + 7 recipe advancements, {len(LANG)} translations.')
+
+# Astral infusion uses the vanilla dispenser layout: every texture is authored here
+# with integer pixel primitives; no borrowed/generated bitmap assets.
+def block_texture(name, top=False, active=False):
+    pixels = []
+    for y in range(16):
+        for x in range(16):
+            edge = x in (0, 15) or y in (0, 15)
+            color = PALETTE['o'] if edge else ((57, 48, 77, 255) if (x+y)%3 else (67, 55, 90, 255))
+            if x in (1, 14) or y in (1, 14): color = PALETTE['c']
+            if top:
+                if (x-7)**2+(y-7)**2 in range(22, 39): color = PALETTE['g']
+                if abs(x-7)+abs(y-7) <= 3: color = PALETTE['b'] if active else PALETTE['v']
+                if (x,y) in ((4,4),(10,4),(4,10),(10,10)): color = PALETTE['w']
+            else:
+                if y in (4,11) and 3<=x<=12: color = PALETTE['g']
+                if 5<=y<=10 and 5<=x<=10: color = PALETTE['b'] if active else PALETTE['v']
+                if active and (x,y) in ((7,6),(8,7),(6,8)): color = PALETTE['w']
+            pixels.append(color)
+    def chunk(kind, body):
+        return struct.pack('!I', len(body))+kind+body+struct.pack('!I', zlib.crc32(kind+body)&0xffffffff)
+    rows=b''.join(b'\0'+bytes(channel for pixel in pixels[y*16:(y+1)*16] for channel in pixel) for y in range(16))
+    data=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',16,16,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b'')
+    target=RESOURCES/f'assets/convergence/textures/block/{name}.png'
+    target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+
+for active in (False,True):
+    suffix='_active' if active else ''
+    for surface in ('side','top'): block_texture(f'astral_infuser_{surface}{suffix}',surface=='top',active)
+    put_json(RESOURCES/f'assets/convergence/models/block/astral_infuser{suffix}.json',{
+        'parent':'minecraft:block/cube_bottom_top','textures':{
+            'side':f'convergence:block/astral_infuser_side{suffix}',
+            'top':f'convergence:block/astral_infuser_top{suffix}',
+            'bottom':'minecraft:block/polished_deepslate'}})
+put_json(RESOURCES/'assets/convergence/blockstates/astral_infuser.json',{'variants':{
+    'active=false':{'model':'convergence:block/astral_infuser'},
+    'active=true':{'model':'convergence:block/astral_infuser_active'}}})
+put_json(RESOURCES/'assets/convergence/models/item/astral_infuser.json',{'parent':'convergence:block/astral_infuser'})
+shaped('astral_infuser',['RSR','GFG','SCS'],{'R':'riftbound:resonance_shard','S':'starfall:starsteel_ingot',
+    'G':'copperwake:brass_gear','F':'convergence:tempered_focus','C':'copperwake:charged_core'})
+put_json(RESOURCES/'data/convergence/loot_table/blocks/astral_infuser.json',{'type':'minecraft:block','pools':[{
+    'rolls':1,'entries':[{'type':'minecraft:item','name':'convergence:astral_infuser'}],
+    'conditions':[{'condition':'minecraft:survives_explosion'}]}]})
+for tag in ('mineable/pickaxe','needs_iron_tool'):
+    put_json(RESOURCES/f'data/minecraft/tags/block/{tag}.json',{'replace':False,'values':['convergence:astral_infuser']})
+put_json(RESOURCES/'data/convergence/advancement/recipes/astral_infuser.json',{
+    'parent':'minecraft:recipes/root','criteria':{
+        'has_focus':{'trigger':'minecraft:inventory_changed','conditions':{'items':[{'items':['convergence:tempered_focus']}]}},
+        'has_recipe':{'trigger':'minecraft:recipe_unlocked','conditions':{'recipe':'convergence:astral_infuser'}}},
+    'requirements':[['has_focus','has_recipe']],'rewards':{'recipes':['convergence:astral_infuser']}})
+put_json(RESOURCES/'data/convergence/advancement/infuser.json',{
+    'parent':'convergence:focus','display':{'icon':{'id':'convergence:astral_infuser'},
+        'title':{'translate':'advancement.convergence.infuser.title'},
+        'description':{'translate':'advancement.convergence.infuser.description'},
+        'frame':'task','show_toast':True,'announce_to_chat':False},
+    'criteria':{'obtained':{'trigger':'minecraft:inventory_changed','conditions':{'items':[{'items':['convergence:astral_infuser']}]}}},
+    'requirements':[['obtained']]})
+LANG.update({
+    'block.convergence.astral_infuser':'Astral Infusion Station',
+    'container.convergence.astral_infuser':'Astral Infusion',
+    'tooltip.convergence.astral_infuser':'Clear Overworld night + open sky: infuse earned relics using fewer Filaments. Sneak + right-click for all four recipes.',
+    'advancement.convergence.infuser.title':'A Workshop Under the Stars',
+    'advancement.convergence.infuser.description':'Craft an Astral Infusion Station from Rift resonance, copper mechanisms and Starsteel.',
+    'message.convergence.infusion.layout':'Grid: top = Rift / Copper / Starsteel; middle = Concordance / Focus / Matrix; bottom = Filament / output / output.',
+    'message.convergence.infusion.hint':'Ten seconds per relic under a clear Overworld night and open sky. Sneak + right-click the station for exact recipes. Inputs remain until a relic is ready.',
+    'message.convergence.infusion.no_recipe':'No complete recipe',
+    'infusion.convergence.verdant_lens':'Verdant Lens',
+    'infusion.convergence.tidal_sigil':'Tidal Sigil',
+    'infusion.convergence.hollow_harness':'Hollow Harness',
+    'infusion.convergence.ember_mender':'Ember Mender',
+    'message.convergence.infusion.recipe.verdant_lens':'Astral Lens: 2 Verdant Echo, 2 Memory Glass, 1 Starsteel, 1 Concordance, 1 Focus, no Matrix, 2 Filaments.',
+    'message.convergence.infusion.recipe.tidal_sigil':'Stormward Sigil: 2 Tidal Echo, 2 Charged Cores, 2 Starsteel, 2 Concordances, no Focus, 1 Matrix, 1 Filament.',
+    'message.convergence.infusion.recipe.hollow_harness':'Expedition Harness: 2 Hollow Echo, 2 Brass Gears, 2 Starsteel, 1 Concordance, 2 Focuses, 1 Matrix, 2 Filaments.',
+    'message.convergence.infusion.recipe.ember_mender':'Mender Coil: 2 Ember Echo, 2 Brass Gears, 1 Starsteel, 1 Concordance, 1 Focus, no Matrix, 2 Filaments.',
+    'message.convergence.infusion.status.incomplete':'Incomplete infusion: use the seven input positions. Sneak + right-click for recipes.',
+    'message.convergence.infusion.status.night':'%s paused: needs clear Overworld night and open sky (%s/%s seconds).',
+    'message.convergence.infusion.status.full':'%s paused: both output slots are full (%s/%s seconds).',
+    'message.convergence.infusion.status.ready':'Output ready: retrieve your relic. Add a complete formula to begin another infusion.',
+    'message.convergence.infusion.status.working':'Infusing %s: %s/%s seconds.'})
+LANG['message.convergence.atlas.6'] += ' Craft an Astral Infusion Station to exchange extra Rift materials for fewer Filaments under the clear night sky.'
+put_json(RESOURCES/'assets/convergence/lang/en_us.json',LANG)
+print('Generated Astral Infusion station models, four textures, loot, crafting recipe, discovery and translated formula guide.')

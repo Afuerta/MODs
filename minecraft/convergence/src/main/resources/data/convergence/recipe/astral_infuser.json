@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "RSR",
+    "GFG",
+    "SCS"
+  ],
+  "key": {
+    "R": {
+      "item": "riftbound:resonance_shard"
+    },
+    "S": {
+      "item": "starfall:starsteel_ingot"
+    },
+    "G": {
+      "item": "copperwake:brass_gear"
+    },
+    "F": {
+      "item": "convergence:tempered_focus"
+    },
+    "C": {
+      "item": "copperwake:charged_core"
+    }
+  },
+  "result": {
+    "id": "convergence:astral_infuser",
+    "count": 1
+  }
+}

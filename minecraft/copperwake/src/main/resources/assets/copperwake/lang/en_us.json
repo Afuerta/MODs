@@ -124,5 +124,8 @@
   "contract.copperwake.end_platform.title": "Freight Beyond the Horizon",
   "contract.copperwake.end_platform.description": "An impossible destination appeared on the departure board. Test its stone and its strange purple cargo.",
   "contract.copperwake.silent_archive.title": "The Silent Archive",
-  "contract.copperwake.silent_archive.description": "The archive listens better than it speaks. Bring quiet-growth samples and lights that do not buzz."
+  "contract.copperwake.silent_archive.description": "The archive listens better than it speaks. Bring quiet-growth samples and lights that do not buzz.",
+  "structure.copperwake.siphon_gardens": "Siphon Gardens",
+  "structure.copperwake.switchyard_depot": "Switchyard Depot",
+  "journal.copperwake.expedition_landmarks": "New expeditions: Siphon Gardens in Verdigris Woods hide dry aqueduct caches above four cisterns. Switchyard Depots in Oxide Flats/Cinder Works connect a two-floor dispatch office to a raised signal bridge. Climb their backed ladders; each has two finite Memory Glass caches guarded by constructs."
 }

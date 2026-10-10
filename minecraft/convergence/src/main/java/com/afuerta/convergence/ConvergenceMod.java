@@ -4,9 +4,14 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Item;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.registry.Registries;
@@ -34,6 +39,16 @@ public final class ConvergenceMod implements ModInitializer {
     public static final Item FIELD_ATLAS = gadget("field_atlas", ExpeditionGadget.Action.ATLAS);
     public static final Item TRIUNE_PULSE = gadget("triune_pulse", ExpeditionGadget.Action.PULSE);
     public static final Item MENDER_COIL = gadget("mender_coil", ExpeditionGadget.Action.REPAIR);
+    public static final AstralInfusionBlock ASTRAL_INFUSER = Registry.register(Registries.BLOCK, id("astral_infuser"),
+            new AstralInfusionBlock(AbstractBlock.Settings.copy(Blocks.SMITHING_TABLE).strength(3.5f).requiresTool()
+                    .luminance(state -> state.get(AstralInfusionBlock.ACTIVE) ? 6 : 0)));
+    public static final BlockEntityType<AstralInfusionBlockEntity> INFUSION_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE,
+            id("astral_infuser"), FabricBlockEntityTypeBuilder.create(AstralInfusionBlockEntity::new, ASTRAL_INFUSER).build());
+    public static final Item ASTRAL_INFUSER_ITEM = register("astral_infuser", new BlockItem(ASTRAL_INFUSER, new Item.Settings()) {
+        @Override public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+            tooltip.add(Text.translatable("tooltip.convergence.astral_infuser"));
+        }
+    });
 
     public static Identifier id(String path) { return Identifier.of(MOD_ID, path); }
 

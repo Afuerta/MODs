@@ -86,8 +86,11 @@ public final class StarImpactData extends PersistentState {
 
     public int pruneMissing(ServerWorld world) {
         int previousSize = stars.size();
-        stars.keySet().removeIf(pos -> world.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)
-                && !world.getBlockState(pos).isOf(ModBlocks.FALLEN_STAR));
+        // Border shrinking or malformed save coordinates must not point into inaccessible terrain.
+        // Reject those positions before even asking about chunk state; unloaded valid stars stay remembered.
+        stars.keySet().removeIf(pos -> !world.isInBuildLimit(pos) || !world.getWorldBorder().contains(pos)
+                || (world.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)
+                && !world.getBlockState(pos).isOf(ModBlocks.FALLEN_STAR)));
         int removed = previousSize - stars.size();
         if (removed > 0) markDirty();
         return removed;

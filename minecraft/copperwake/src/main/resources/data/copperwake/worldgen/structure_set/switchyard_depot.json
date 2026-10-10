@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "copperwake:switchyard_depot",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 39014759,
+    "spacing": 32,
+    "separation": 13,
+    "spread_type": "linear"
+  }
+}

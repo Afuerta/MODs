@@ -4,6 +4,15 @@
   "version": "1.0.0",
   "name": "Convergence GameTests",
   "environment": "*",
-  "entrypoints": {"fabric-gametest": ["com.afuerta.convergence.ConvergenceGameTests"]},
-  "depends": {"convergence": "*", "fabric-gametest-api-v1": "*"}
+  "entrypoints": {
+    "fabric-gametest": [
+      "com.afuerta.convergence.ConvergenceGameTests",
+      "com.afuerta.convergence.AstralInfusionGameTests",
+      "com.afuerta.convergence.PackUpgradeGameTests"
+    ]
+  },
+  "depends": {
+    "convergence": "*",
+    "fabric-gametest-api-v1": "*"
+  }
 }

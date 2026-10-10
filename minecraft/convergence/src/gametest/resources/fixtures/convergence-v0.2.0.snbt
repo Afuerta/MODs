@@ -1,0 +1,33 @@
+{
+    fixture_provenance: "Authored legacy-format input for T23 commit a4dcdbe (Minecraft 1.21.1); not a sampled player world or current writer round-trip.",
+    scoreboard: {
+        Objectives: [
+            {Name: "riftbound_progress", CriteriaName: "dummy", DisplayName: '{"text":"Riftbound progression"}', RenderType: "integer"},
+            {Name: "cw_contracts", CriteriaName: "dummy", DisplayName: '{"text":"cw_contracts"}', RenderType: "integer"},
+            {Name: "convergence_jobs", CriteriaName: "dummy", DisplayName: '{"translate":"scoreboard.convergence.progress"}', RenderType: "integer"}
+        ],
+        PlayerScores: [
+            {Name: "00000000-0000-0000-0000-000000000001", Objective: "riftbound_progress", Score: 3},
+            {Name: "00000000-0000-0000-0000-000000000001", Objective: "cw_contracts", Score: 12},
+            {Name: "00000000-0000-0000-0000-000000000001", Objective: "convergence_jobs", Score: 18},
+            {Name: "00000000-0000-0000-0000-000000000002", Objective: "riftbound_progress", Score: 2},
+            {Name: "00000000-0000-0000-0000-000000000002", Objective: "cw_contracts", Score: 4},
+            {Name: "00000000-0000-0000-0000-000000000002", Objective: "convergence_jobs", Score: 5},
+            {Name: "00000000-0000-0000-0000-000000000003", Objective: "riftbound_progress", Score: 1},
+            {Name: "00000000-0000-0000-0000-000000000003", Objective: "cw_contracts", Score: 11},
+            {Name: "00000000-0000-0000-0000-000000000003", Objective: "convergence_jobs", Score: 9}
+        ]
+    },
+    inventory: [
+        {Slot: 0b, id: "riftbound:resonance_shard", count: 64},
+        {Slot: 1b, id: "copperwake:memory_glass", count: 12},
+        {Slot: 2b, id: "starfall:starsteel_pickaxe", count: 1, components: {"minecraft:damage": 202, "minecraft:custom_name": '{"text":"Old Starsteel Pick"}'}},
+        {Slot: 3b, id: "convergence:concordance", count: 5}
+    ],
+    protected_terrain: {
+        chunks: [
+            {chunk: -1L, columns: [L; 0L, 0L, 0L, -9223372036854775808L]},
+            {chunk: 0L, columns: [L; -9223372036854775807L, 1L, 0L, 0L]}
+        ]
+    }
+}

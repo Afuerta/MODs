@@ -17,6 +17,8 @@ public final class DomainTests {
     public static void main(String[] args) {
         plannerProperties();
         plannerValidation();
+        encounterPatterns();
+        pendingReinforcements();
         immutablePlans();
         lifecycleAndRewardClaims();
         withdrawalAndFailure();
@@ -56,6 +58,67 @@ public final class DomainTests {
         for (int seed = 0; seed < 16; seed++) variations.add(plan(1, seed).waves());
         check(variations.size() > 1, "Different seeds change enemy composition");
         check(plan(1, 42).waves().stream().map(WavePlan::mobCount).toList().equals(List.of(3, 4, 5)), "Solo initiate balance");
+    }
+
+    private static void encounterPatterns() {
+        for (TrialTier tier : TrialTier.values()) for (int party = 1; party <= 4; party++) {
+            TrialPlan plan = TrialPlanner.plan(Aspect.VERDANT, tier, party, 42);
+            Set<EncounterPattern> seen = new HashSet<>();
+            for (WavePlan wave : plan.waves()) {
+                seen.add(wave.pattern());
+                check(wave.pattern() == EncounterPattern.forWave(tier, wave.index()), "Stable authored sequence");
+                int initial = wave.pattern().initialCount(wave.mobCount());
+                check(initial > 0 && initial <= wave.mobCount(), "Bounded initial deployment");
+                if (wave.pattern() == EncounterPattern.REINFORCEMENTS) {
+                    check(initial < wave.mobCount(), "Reinforcement wave actually reserves enemies");
+                }
+            }
+            check(tier == TrialTier.INITIATE ? seen.equals(Set.of(EncounterPattern.STANDARD))
+                    : seen.equals(Set.of(EncounterPattern.REINFORCEMENTS, EncounterPattern.PINCER,
+                    EncounterPattern.STANDARD_BEARER)), "Initiate baseline and three advanced tactics");
+        }
+        for (int available = 1; available <= 32; available++) {
+            Set<Integer> slots = new HashSet<>();
+            for (int i = 0; i < available; i++) {
+                int slot = EncounterPattern.PINCER.spawnSlot(i, available);
+                check(slot >= 0 && slot < available && slots.add(slot), "Pincer is a bounded permutation");
+            }
+            if (available > 1) check(EncounterPattern.PINCER.spawnSlot(1, available) == (available + 1) / 2,
+                    "Second pincer enemy enters from the opposing ring half");
+        }
+        expect(IllegalArgumentException.class, () -> EncounterPattern.PINCER.spawnSlot(3, 3));
+        expect(IllegalArgumentException.class, () -> EncounterPattern.REINFORCEMENTS.initialCount(25));
+        expect(NullPointerException.class, () -> new WavePlan(0, List.of(MobKind.ZOMBIE), null));
+    }
+
+    private static void pendingReinforcements() {
+        TrialPlan plan = TrialPlanner.plan(Aspect.VERDANT, TrialTier.ADEPT, 1, 42);
+        TrialSession session = new TrialSession(plan, List.of(ALICE), 0);
+        session.advance(100);
+        List<UUID> ids = freshMobs(5);
+        expect(IllegalArgumentException.class, () -> session.registerWaveMobs(ids));
+        expect(IllegalArgumentException.class, () -> session.registerWaveMobs(ids.subList(0, 3), ids.subList(2, 4)));
+        expect(IllegalArgumentException.class, () -> session.registerWaveMobs(ids.subList(0, 2), ids.subList(2, 5)));
+        check(session.state() == TrialSession.State.SPAWNING, "Rejected reservation is atomic");
+        session.registerWaveMobs(ids.subList(0, 3), ids.subList(3, 5));
+        check(session.remainingMobs() == 5 && session.pendingMobs().size() == 2, "Pending enemies count toward progress");
+        expect(UnsupportedOperationException.class, () -> session.pendingMobs().clear());
+        for (UUID id : ids.subList(0, 3)) session.mobDefeated(id);
+        check(!session.mobDefeated(ids.get(3)), "Unspawned enemies cannot die");
+        check(!session.replaceMob(ids.get(3), new UUID(7, 7)), "Unspawned enemies cannot convert");
+        check(session.advance(200) == TrialSession.Event.NONE && session.state() == TrialSession.State.ACTIVE,
+                "Killing initial group never bypasses reinforcements");
+        check(session.claimRewards().isEmpty(), "Waiting wave cannot award loot");
+        check(session.deployMob(ids.get(3)), "Reserved reinforcement deploys once");
+        check(!session.deployMob(ids.get(3)), "Duplicate deployment ignored");
+        UUID converted = new UUID(7, 8);
+        check(session.replaceMob(ids.get(3), converted), "Deployed reinforcements convert normally");
+        check(!session.mobDefeated(ids.get(3)), "Stale pre-conversion death ignored");
+        session.mobDefeated(converted);
+        check(session.remainingMobs() == 1, "Conversion preserves remaining pending enemy");
+        session.fail(TrialSession.FailureReason.SPAWN_FAILED);
+        check(!session.deployMob(ids.get(4)), "Abort prevents delayed deployment");
+        check(session.claimRewards().isEmpty(), "Failed deployment has no rewards");
     }
 
     private static MobKind signature(Aspect aspect) {

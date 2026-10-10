@@ -1,6 +1,7 @@
 package com.afuerta.copperwake;
 
 import com.afuerta.copperwake.domain.ContractCatalog;
+import com.afuerta.copperwake.entity.ConstructRegistry;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -23,16 +24,24 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.structure.StructurePlacementData;
+import net.minecraft.structure.PoolStructurePiece;
+import net.minecraft.structure.StructureStart;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionOptions;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.gen.StructureTerrainAdaptation;
+import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
+import net.minecraft.world.gen.chunk.placement.RandomSpreadStructurePlacement;
+import net.minecraft.world.gen.noise.NoiseConfig;
 
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
@@ -63,7 +72,7 @@ public final class CopperwakeGameTests implements FabricGameTest {
             context.assertTrue(rustwild.chunkGenerator().getBiomeSource().getBiomes()
                     .stream().anyMatch(entry -> entry.value() == biome), "Biome omitted from dimension source: " + name);
         }
-        for (String name : List.of("salvage_yard", "relay_tower", "foundry")) {
+        for (String name : List.of("salvage_yard", "relay_tower", "foundry", "siphon_gardens", "switchyard_depot")) {
             var id = CopperwakeMod.id(name);
             context.assertTrue(registries.get(RegistryKeys.STRUCTURE).containsId(id), "Structure codec failed: " + name);
             context.assertTrue(registries.get(RegistryKeys.STRUCTURE_SET).containsId(id), "Structure set did not load: " + name);
@@ -87,7 +96,7 @@ public final class CopperwakeGameTests implements FabricGameTest {
         }
         var loot = context.getWorld().getServer().getReloadableRegistries();
         for (String name : List.of("blocks/salvage_bench", "blocks/riveted_copper", "blocks/lumen_glass",
-                "chests/salvage_yard", "chests/relay_tower", "chests/foundry",
+                "chests/salvage_yard", "chests/relay_tower", "chests/foundry", "chests/siphon_gardens", "chests/switchyard_depot",
                 "entities/rust_mite", "entities/coil_sentry", "entities/foundry_foreman")) {
             var id = CopperwakeMod.id(name);
             context.assertTrue(loot.getIds(RegistryKeys.LOOT_TABLE).contains(id), "Loot table did not decode: " + name);
@@ -118,16 +127,128 @@ public final class CopperwakeGameTests implements FabricGameTest {
     @GameTest(templateName = "copperwake:salvage_yard")
     public void salvageYardTemplatePlacesItsLoot(TestContext context) {
         checkPlacedTemplate(context, "salvage_yard");
+        context.complete();
     }
 
     @GameTest(templateName = "copperwake:relay_tower")
     public void relayTowerTemplatePlacesItsLoot(TestContext context) {
         checkPlacedTemplate(context, "relay_tower");
+        context.complete();
     }
 
     @GameTest(templateName = "copperwake:foundry")
     public void foundryTemplatePlacesItsLoot(TestContext context) {
         checkPlacedTemplate(context, "foundry");
+        context.complete();
+    }
+
+    @GameTest(templateName = "copperwake:siphon_gardens")
+    public void siphonGardensPlacesDryEntranceLadderCisternsAndFiniteCaches(TestContext context) {
+        checkPlacedTemplate(context, "siphon_gardens");
+        BlockPos offset = templateOffset(context);
+        expectClear(context, offset.add(17, 1, 0));
+        expectClear(context, offset.add(17, 1, 1));
+        expectClear(context, offset.add(27, 10, 18));
+        expectClear(context, offset.add(15, 10, 24));
+        expectClear(context, offset.add(15, 10, 19));
+        for (int y = 1; y <= 11; y++) context.expectBlock(Blocks.LADDER, offset.add(14, y, 24));
+        for (int x : new int[]{5, 27}) for (int z : new int[]{6, 23}) {
+            context.expectBlock(Blocks.WATER, offset.add(x, 1, z));
+            context.expectBlock(Blocks.STONE_BRICKS, offset.add(x, 0, z));
+        }
+        context.expectBlock(Blocks.STONE_BRICKS, offset.add(27, 9, 18));
+        checkPersistentGuards(context, 2, 2);
+        checkFiniteCache(context, offset.add(20, 1, 25), 2, 4, 6, 12, 1, 3);
+        checkFiniteCache(context, offset.add(31, 10, 18), 2, 4, 6, 12, 1, 3);
+        context.complete();
+    }
+
+    @GameTest(templateName = "copperwake:switchyard_depot")
+    public void switchyardDepotPlacesWalkablePlatformsOfficeAndFiniteCaches(TestContext context) {
+        checkPlacedTemplate(context, "switchyard_depot");
+        BlockPos offset = templateOffset(context);
+        expectClear(context, offset.add(18, 1, 0));
+        expectClear(context, offset.add(9, 1, 24));
+        expectClear(context, offset.add(9, 7, 24));
+        expectClear(context, offset.add(30, 8, 19));
+        for (int y = 1; y <= 8; y++) context.expectBlock(Blocks.LADDER, offset.add(4, y, 29));
+        for (int x : new int[]{6, 12, 19, 26, 32}) context.expectBlock(Blocks.RAIL, offset.add(x, 1, 10));
+        context.expectBlock(Blocks.DARK_OAK_PLANKS, offset.add(30, 7, 19));
+        checkPersistentGuards(context, 2, 3);
+        checkFiniteCache(context, offset.add(13, 7, 30), 1, 3, 8, 14, 2, 4);
+        checkFiniteCache(context, offset.add(23, 2, 27), 1, 3, 8, 14, 2, 4);
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void allJigsawStartsUseRustwildSurfaceHeightAndRejectWrongBiomes(TestContext context) throws Exception {
+        var world = context.getWorld();
+        var registries = world.getRegistryManager();
+        DimensionOptions definition;
+        try (var reader = world.getServer().getResourceManager().getResource(CopperwakeMod.id("dimension/rustwild.json"))
+                .orElseThrow().getReader()) {
+            definition = DimensionOptions.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries),
+                    JsonParser.parseReader(reader)).getOrThrow();
+        }
+        context.assertTrue(definition.chunkGenerator() instanceof NoiseChunkGenerator, "Rustwild must retain its real noise terrain generator");
+        var generator = (NoiseChunkGenerator) definition.chunkGenerator();
+        long seed = 508431L;
+        var noise = NoiseConfig.create(generator.getSettings().value(), registries.getWrapperOrThrow(RegistryKeys.NOISE_PARAMETERS), seed);
+        for (String name : List.of("salvage_yard", "relay_tower", "foundry", "siphon_gardens", "switchyard_depot")) {
+            var structure = registries.get(RegistryKeys.STRUCTURE).get(CopperwakeMod.id(name));
+            context.assertEquals(StructureTerrainAdaptation.BEARD_THIN, structure.getTerrainAdaptation(), "Lost terrain joining: " + name);
+            var allowed = structure.getValidBiomes().stream().map(entry -> entry.getKey().orElseThrow().getValue()).collect(java.util.stream.Collectors.toSet());
+            var expected = switch (name) {
+                case "salvage_yard" -> java.util.Set.of(CopperwakeMod.id("oxide_flats"), CopperwakeMod.id("verdigris_woods"));
+                case "relay_tower" -> java.util.Set.of(CopperwakeMod.id("oxide_flats"), CopperwakeMod.id("verdigris_woods"), CopperwakeMod.id("cinder_works"));
+                case "foundry" -> java.util.Set.of(CopperwakeMod.id("cinder_works"));
+                case "siphon_gardens" -> java.util.Set.of(CopperwakeMod.id("verdigris_woods"));
+                default -> java.util.Set.of(CopperwakeMod.id("oxide_flats"), CopperwakeMod.id("cinder_works"));
+            };
+            context.assertEquals(expected, allowed, "Landmark can generate outside its intended Rustwild biomes: " + name);
+            var placement = registries.get(RegistryKeys.STRUCTURE_SET).get(CopperwakeMod.id(name)).placement();
+            context.assertTrue(placement instanceof RandomSpreadStructurePlacement, "Landmark lost bounded grid placement: " + name);
+            var spread = (RandomSpreadStructurePlacement) placement;
+            int spacing = switch (name) { case "salvage_yard" -> 24; case "relay_tower" -> 30; case "foundry" -> 38; case "siphon_gardens" -> 34; default -> 32; };
+            int separation = switch (name) { case "salvage_yard" -> 10; case "relay_tower" -> 12; case "foundry" -> 16; case "siphon_gardens" -> 14; default -> 13; };
+            context.assertEquals(spacing, spread.getSpacing(), "Landmark placement frequency changed");
+            context.assertEquals(separation, spread.getSeparation(), "Landmark minimum separation changed");
+            for (ChunkPos chunk : List.of(new ChunkPos(0, 0), new ChunkPos(19, -13), new ChunkPos(-27, 41))) {
+                // Height sampling and start construction use the production noise generator.
+                // They do not populate or load distant chunks in the running test world.
+                var start = structure.createStructureStart(registries, generator, generator.getBiomeSource(), noise,
+                        world.getStructureTemplateManager(), seed, chunk, 0, world, entry -> true);
+                context.assertTrue(start.hasChildren(), "Jigsaw failed to create its template piece: " + name);
+                context.assertEquals(1, start.getChildren().size(), "Landmark generated unbounded extra pieces: " + name);
+                context.assertTrue(start.getChildren().getFirst() instanceof PoolStructurePiece, "Unexpected landmark piece type");
+                var piece = (PoolStructurePiece) start.getChildren().getFirst();
+                var box = piece.getBoundingBox();
+                int x = (box.getMinX() + box.getMaxX()) / 2;
+                int z = (box.getMinZ() + box.getMaxZ()) / 2;
+                int surface = generator.getHeightOnGround(x, z, Heightmap.Type.WORLD_SURFACE_WG, world, noise);
+                context.assertEquals(surface, box.getMinY() + piece.getGroundLevelDelta(), "Landmark floats or sinks instead of anchoring to Rustwild terrain: " + name);
+                var rejected = structure.createStructureStart(registries, generator, generator.getBiomeSource(), noise,
+                        world.getStructureTemplateManager(), seed, chunk, 0, world, entry -> false);
+                context.assertTrue(rejected == StructureStart.DEFAULT || !rejected.hasChildren(), "Biome rejection still generated a landmark");
+            }
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void newCacheLootStaysWithinBoundsAcrossSeeds(TestContext context) {
+        var parameters = new LootContextParameterSet.Builder(context.getWorld())
+                .add(LootContextParameters.ORIGIN, context.getAbsolutePos(new BlockPos(2, 2, 2)).toCenterPos()).build(LootContextTypes.CHEST);
+        for (String name : List.of("siphon_gardens", "switchyard_depot")) {
+            var table = context.getWorld().getServer().getReloadableRegistries().getLootTable(
+                    RegistryKey.of(RegistryKeys.LOOT_TABLE, CopperwakeMod.id("chests/" + name)));
+            for (long seed = 1; seed <= 64; seed++) {
+                var drops = table.generateLoot(parameters, seed);
+                boolean gardens = name.equals("siphon_gardens");
+                checkLootBounds(context, drops, gardens ? 2 : 1, gardens ? 4 : 3, gardens ? 6 : 8, gardens ? 12 : 14, gardens ? 1 : 2, gardens ? 3 : 4);
+            }
+        }
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -458,7 +579,67 @@ public final class CopperwakeGameTests implements FabricGameTest {
                     "Placed barrel points to unloaded loot: " + name);
         }
         context.assertFalse(context.getBlockState(offset).isAir(), "Structure foundation was not placed: " + name);
-        context.complete();
+    }
+
+    private static BlockPos templateOffset(TestContext context) {
+        var controller = context.getBlockEntity(BlockPos.ORIGIN);
+        context.assertTrue(controller instanceof StructureBlockBlockEntity, "GameTest structure controller missing");
+        return ((StructureBlockBlockEntity) controller).getOffset();
+    }
+
+    private static void expectClear(TestContext context, BlockPos feet) {
+        context.assertTrue(context.getBlockState(feet).isAir() && context.getBlockState(feet.up()).isAir(),
+                "Authored expedition route lost two-block headroom at " + feet);
+    }
+
+    private static void checkPersistentGuards(TestContext context, int mites, int sentries) {
+        var placedMites = context.getEntities(ConstructRegistry.RUST_MITE);
+        var placedSentries = context.getEntities(ConstructRegistry.COIL_SENTRY);
+        context.assertEquals(mites, placedMites.size(), "World-generation Rust Mite guard NBT did not spawn");
+        context.assertEquals(sentries, placedSentries.size(), "World-generation Coil Sentry guard NBT did not spawn");
+        context.assertTrue(placedMites.stream().allMatch(MobEntity::isPersistent) && placedSentries.stream().allMatch(MobEntity::isPersistent),
+                "Expedition guards lost their persistence marker");
+    }
+
+    private static void checkFiniteCache(TestContext context, BlockPos position,
+            int glassMin, int glassMax, int scrapMin, int scrapMax, int gearMin, int gearMax) {
+        var entity = context.getBlockEntity(position);
+        context.assertTrue(entity instanceof LootableContainerBlockEntity, "Expedition cache was not a placed lootable barrel");
+        var barrel = (LootableContainerBlockEntity) entity;
+        barrel.setLootTableSeed(72141L);
+        barrel.generateLoot(null);
+        context.assertTrue(barrel.getLootTable() == null, "Opening a cache did not consume its deferred loot marker");
+        var drops = new ArrayList<ItemStack>();
+        for (int slot = 0; slot < barrel.size(); slot++) drops.add(barrel.getStack(slot).copy());
+        checkLootBounds(context, drops, glassMin, glassMax, scrapMin, scrapMax, gearMin, gearMax);
+        for (int slot = 0; slot < barrel.size(); slot++) barrel.removeStack(slot);
+        barrel.generateLoot(null);
+        context.assertTrue(barrel.isEmpty(), "An emptied cache generated a second reward");
+        // Survival-placed barrels have no world-generation marker; a player cannot
+        // refresh expedition loot by moving or rebuilding a normal container.
+        context.setBlockState(position, Blocks.AIR);
+        context.setBlockState(position, Blocks.BARREL);
+        var replacement = (LootableContainerBlockEntity) context.getBlockEntity(position);
+        context.assertTrue(replacement.getLootTable() == null && replacement.isEmpty(), "Replacing a barrel recreated expedition loot");
+    }
+
+    private static void checkLootBounds(TestContext context, List<ItemStack> drops,
+            int glassMin, int glassMax, int scrapMin, int scrapMax, int gearMin, int gearMax) {
+        int glass = lootCount(drops, ModContent.MEMORY_GLASS);
+        int scrap = lootCount(drops, ModContent.SCRAP);
+        int gears = lootCount(drops, ModContent.BRASS_GEAR);
+        context.assertTrue(glass >= glassMin && glass <= glassMax, "Expedition cache exploration loot is outside its stated bounds");
+        context.assertTrue(scrap >= scrapMin && scrap <= scrapMax, "Expedition cache Scrap is outside its stated bounds");
+        context.assertTrue(gears >= gearMin && gears <= gearMax, "Expedition cache gears are outside their stated bounds");
+        context.assertTrue(lootCount(drops, ModContent.CHARGED_CORE) <= 1, "Expedition cache rolled multiple cores");
+        context.assertEquals(0, lootCount(drops, ModContent.FOREMAN_SEAL), "New landmark bypassed the existing boss-summon loop");
+        context.assertEquals(0, lootCount(drops, ModContent.FOREMAN_HEART), "New landmark awarded an undefeated boss trophy");
+        context.assertTrue(drops.stream().noneMatch(stack -> !stack.isEmpty() && !Registries.ITEM.getId(stack.getItem()).getNamespace().equals("minecraft")
+                && !Registries.ITEM.getId(stack.getItem()).getNamespace().equals("copperwake")), "Landmark granted another mod's trial-gated reward");
+    }
+
+    private static int lootCount(List<ItemStack> drops, Item item) {
+        return drops.stream().filter(stack -> stack.isOf(item)).mapToInt(ItemStack::getCount).sum();
     }
 
     private static ServerPlayerEntity survivalPlayer(TestContext context) {

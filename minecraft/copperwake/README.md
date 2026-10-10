@@ -1,6 +1,6 @@
 # Copperwake: Salvagers of the Rustwild
 
-**Minecraft Java 1.21.1 · Fabric · Java 21 · 0.2.0-alpha.1**
+**Minecraft Java 1.21.1 · Fabric · Java 21 · 0.3.0-alpha.1**
 
 The machines kept working after everyone left. Now their workshops are forests,
 their freight yards are ruins, and their foreman still expects the next shift.
@@ -13,13 +13,19 @@ build. It does not depend on or modify Riftbound.
 
 *Geometry rendered from the actual structure templates; not an in-game screenshot.*
 
+![Original Siphon Gardens and Switchyard Depot geometry](docs/expedition-landmarks.png)
+
+*Version 0.3 expedition geometry, rendered from the committed NBT. Simplified
+block colors and glass transparency are illustrative.*
+
 ## First expedition
 
 1. Craft a **Field Journal** (three paper + copper ingot) and read it with right-click.
 2. Craft a **Survey Key** using a compass, copper, redstone and an amethyst shard.
    Use it from the Overworld to enter the Rustwild. Bring ordinary survival gear.
 3. Search three custom biomes: **Oxide Flats**, **Verdigris Woods**, and
-   **Cinder Works**. Loot abandoned yards, climb relay towers, and enter foundries.
+   **Cinder Works**. Loot abandoned yards, climb relay towers, enter foundries,
+   explore the **Siphon Gardens**, and cross a **Switchyard Depot** signal bridge.
 4. Defeat constructs and open guarded barrels for **Scrap**, **Memory Glass**,
    **Brass Gears**, and **Charged Cores**.
 5. Build a **Salvage Bench**. Right-click to read your current contract;
@@ -42,7 +48,7 @@ installing this alpha or later removing a dimension mod.
 | System | First build |
 | --- | --- |
 | Exploration | Rustwild dimension; three custom land biomes; vanilla ocean between landmasses |
-| Landmarks | 29×20×27 salvage yard with crane, 19×31×19 relay tower, 31×28×29 twin-stack foundry; climbable paths, loot barrels, and persistent guards |
+| Landmarks | Five original builds: salvage yard, relay tower, twin-stack foundry, 35×19×31 Siphon Gardens and 39×17×35 Switchyard Depot; walkable entrances, climbable routes, finite loot barrels and persistent guards |
 | Enemies | Rust Mite with committed pounce; Coil Sentry with marked pulse; Foundry Foreman with boss bar and two combat phases |
 | Guild | 22 authored contracts, three ranks, persisted per-player progress, deterministic order and repeatable late-game deliveries |
 | Gadgets | Arc Gauntlet, handheld Spring Boots, Patch Kits, Survey Key, Foreman Seal, Survey Flare and Field Repairer |
@@ -96,7 +102,23 @@ faster. Construct attacks do not explode blocks, place fire, or damage terrain.
 | `/copperwake kit` | Operator-only exploration kit; does not grant guild rank |
 
 Operators can also use vanilla `/locate structure copperwake:salvage_yard`,
-`copperwake:relay_tower` or `copperwake:foundry` while in the Rustwild.
+`copperwake:relay_tower`, `copperwake:foundry`, `copperwake:siphon_gardens` or
+`copperwake:switchyard_depot` while in the Rustwild.
+
+Version 0.3 also fixes natural generation for the three original landmarks: a
+zero-depth jigsaw definition previously omitted its first piece. All five builds
+now create exactly one surface-anchored piece; registry IDs and existing grid
+spacing are preserved. New starts appear in newly generated chunks.
+
+The **Siphon Gardens** grow in Verdigris Woods: four shallow cisterns flank a
+glass-roofed pump gallery, with a backed ladder to the dry aqueduct service lane.
+The **Switchyard Depot** occupies Oxide Flats and Cinder Works: enter the dispatch
+office, climb its internal ladder, then follow the raised signal bridge over the
+five freight lines. Each has a basic salvage barrel and two guarded expedition
+caches. Gardens guarantee 2–4 Memory Glass per expedition cache; depot caches give
+1–3. Opening each cache consumes its world-generated loot marker. Loot stays
+empty after collection; replacing a normal barrel cannot refresh it. Neither new
+landmark grants guild rank, Foreman trophies, or Convergence trial rewards.
 
 ## Install and build
 
@@ -112,7 +134,7 @@ python tools/validate_resources.py
 ```
 
 On Windows use `gradlew.bat build`. The installable file is
-`build/libs/copperwake-0.2.0-alpha.1.jar`; the `-sources.jar` is for developers.
+`build/libs/copperwake-0.3.0-alpha.1.jar`; the `-sources.jar` is for developers.
 The CI workflow uploads both as an artifact named `copperwake-fabric-1.21.1`.
 
 `build` runs the pure domain harness. `./gradlew domainTest` runs only progression

@@ -1,6 +1,6 @@
 # Riftbound: Wild Resonance
 
-**Version 0.2.0 · Minecraft Java 1.21.1 · Fabric · Java 21**
+**Version 0.3.0 · Minecraft Java 1.21.1 · Fabric · Java 21**
 
 Exploration gives you Echoes. An anchor turns those Echoes into a survival challenge. Completing a challenge earns Resonance, which you spend on a relic that changes how you move, fight, or mine.
 
@@ -9,7 +9,7 @@ Exploration gives you Echoes. An anchor turns those Echoes into a survival chall
 - Four Echo aspects: Verdant, Ember, Tidal, and Hollow.
 - A craftable, placeable Rift Anchor with boss-bar progress and a visible arena boundary.
 - Three unlocked trial tiers, each with its own wave count, entry cost, and reward.
-- Seeded wave composition using six existing Minecraft enemy types.
+- Seeded wave composition using six existing Minecraft enemy types, plus three authored advanced encounter patterns.
 - Solo trials or explicitly enrolled parties of up to four players.
 - A Dormant Relic and three crafted offhand relics: Wayfarer, Bulwark, and Harvester.
 - Saved tier unlocks using a namespaced vanilla scoreboard objective.
@@ -18,14 +18,14 @@ Exploration gives you Echoes. An anchor turns those Echoes into a survival chall
 - Original pixel textures, recipe-book unlocks, advancement tree, and translated item tooltips.
 - Optional Convergence trials with four telegraphed aspect hazards and cross-mod rewards.
 
-Original enemies, bosses, and structures remain in the [roadmap](docs/roadmap.md). Aspect hazards now ship in the optional Convergence mode; ordinary trials retain their original rules.
+Original enemies, bosses, and structures remain in the [roadmap](docs/roadmap.md). Aspect hazards now ship in the optional Convergence mode; Initiate retains its original waves; advanced encounter patterns also work without Convergence.
 
 ## Installation
 
 1. Use a Minecraft Java **1.21.1** instance with **Fabric Loader 0.16.14 or newer** and Java 21.
 2. Install [Fabric API for Minecraft 1.21.1](https://modrinth.com/mod/fabric-api).
 3. Build this project or download the `riftbound-build` artifact from a successful repository Actions run.
-4. Put `riftbound-0.2.0.jar` in the instance's `mods` directory. Do not install the `-sources.jar`.
+4. Put `riftbound-0.3.0.jar` in the instance's `mods` directory. Do not install the `-sources.jar`.
 5. Install the same mod and compatible Fabric API on the server and each participating client.
 
 The build pins Fabric API `0.116.17+1.21.1`. It does not target other Minecraft versions.
@@ -45,6 +45,20 @@ Build a Rift Anchor with all four Echo types, four obsidian, and an amethyst sha
 The entry cost is paid once by the initiator. All offered Echoes must have the same aspect. Preparation lasts five seconds, with four seconds between waves. Stay alive, in the same dimension, and within 24 blocks of the anchor through completion to receive rewards. A party member who leaves or dies cannot rejoin that run. After a run, every enrolled participant receives a 60-second cooldown.
 
 Sneak-right-click the anchor with an empty main hand to cycle through your unlocked tiers. `/riftbound status` shows the selected tier, saved progress, and cooldown.
+
+## Advanced encounter patterns
+
+Finish Initiate normally to unlock Adept; no new item, command, or Convergence installation is needed. Adept and Exalted rotate through these tactics in order, repeating from Reinforcements after the third wave. Initiate keeps its original simultaneous deployments. Enemy totals, aspect composition, maximum health, entry costs, progression thresholds, and payouts stay the same.
+
+| Pattern | What changes | How to respond |
+| --- | --- | --- |
+| Reinforcements | Half the wave, rounded up, enters first. The rest appears at visible white particle gates five seconds after the wave begins. Clearing the first group does not advance the wave. | Use the interval to reposition; watch the marked reserve gates. |
+| Pincer rush | Enemies alternate between opposing halves of the spawn ring and receive Speed I for four seconds. | Keep a route between the groups open; avoid backing into the opposite flank. |
+| Standard guard | The named, glowing Rift Standard-bearer grants Resistance I to this wave's other enemies within eight blocks. It does not protect itself. | Focus the bearer, or pull allies out of range. Killing the bearer removes the guard immediately; leaving its radius lets protection expire within 1.25 seconds. |
+
+Text and a sound announce each pattern during preparation or the preceding intermission. Reserve gates remain marked until deployment and their arrival has a second text/sound cue. The standard-bearer's role survives zombie/drowned conversions. These tactics also run during attuned Convergence trials, alongside the existing aspect hazards.
+
+Deployment never edits terrain or loads chunks. A blocked reserve gate aborts the trial, cleans up all deployed and reserved enemies, and gives no completion reward. Withdrawal, death, missing mobs, timeout, shutdown, and anchor removal use the same cleanup path. Reserved enemies cannot count as kills until they actually spawn. All enemies retain ordinary loot/XP/Echo suppression. The server retains the four-trial cap and 24-enemy wave cap; the standard guard checks only that wave's live enemies once per second.
 
 ## Play together
 
@@ -95,7 +109,7 @@ python3 tools/validate_resources.py
 ./gradlew runClient
 ```
 
-On Windows, use `gradlew.bat build` and `gradlew.bat runClient` from this directory. The Gradle wrapper is included. `build/libs/riftbound-0.2.0.jar` is the installable artifact.
+On Windows, use `gradlew.bat build` and `gradlew.bat runClient` from this directory. The Gradle wrapper is included. `build/libs/riftbound-0.3.0.jar` is the installable artifact.
 
 `build` runs the framework-independent `domainTest` harness. Run it separately with `./gradlew domainTest`. Texture regeneration requires Pillow: `python3 tools/generate_textures.py`; resource validation uses only Python's standard library.
 
@@ -103,7 +117,7 @@ Operators can use `/riftbound kit` to receive an anchor and Echoes for testing. 
 
 ## Verification and limitations
 
-The v0.2 build passes 4,015 domain checks and all 12 headless Minecraft integration tests, including all four hazards, warning timing, bystander immunity, rejected activation, and once-only Convergence rewards. Static resource validation also passes. Details are recorded in [testing.md](docs/testing.md). Combat feel, client rendering, and a real two-client co-op session still require playtesting before this should be treated as a stable release.
+The v0.3 encounter expansion passes 4,718 domain checks, Fabric production/GameTest compilation, all 17 headless Minecraft integration tests, and static resource validation. New scenarios cover delayed deployment, pincer geometry, priority targets, conversion, party eligibility, and abort cleanup. Details are recorded in [testing.md](docs/testing.md). Combat feel, client rendering, and a real two-client co-op session still require playtesting before this should be treated as a stable release.
 
 Trials do not generate or replace terrain and do not hold chunks loaded. Interrupted trials are aborted, not resumed, after a restart. Progress persists; selected tier, readiness, and cooldowns reset when the server restarts. Shard rewards overflow onto the ground when a player's inventory is full. Keep arenas away from crops and delicate builds: these are vanilla enemies and standard collision/projectile interactions still apply.
 

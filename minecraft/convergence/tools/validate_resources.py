@@ -35,7 +35,7 @@ for item in KNOWN:
     assert cursor == len(data), texture
 
 recipes = list((RES / f'data/{MOD}/recipe').glob('*.json'))
-assert len(recipes) == 7
+assert len(recipes) == 8
 for path in recipes:
     recipe = json.loads(path.read_text())
     assert recipe['result'] == {'id': f'{MOD}:{path.stem}', 'count': 1}, path
@@ -45,7 +45,7 @@ for path in recipes:
         used = set(''.join(pattern)) - {' '}
         assert used == set(recipe['key']), path
         ingredients = [entry['item'] for entry in recipe['key'].values()]
-        if path.stem not in {'field_atlas', 'attunement_core'}:
+        if path.stem not in {'field_atlas', 'attunement_core', 'astral_infuser'}:
             assert 'convergence:concordance' in ingredients, f'Advanced gear needs a hardmode trophy: {path}'
     else:
         ingredients = [entry['item'] for entry in recipe['ingredients']]
@@ -90,3 +90,24 @@ for identifier in ids:
     assert f'contract.convergence.{identifier}.description' in LANG
 assert 'Text.literal(' not in sources, 'Player-facing English must use translation keys'
 print(f'Convergence resources valid: {len(json_files)} JSON, {len(KNOWN)} sprites/models, {len(recipes)} recipes, 18 translated commissions.')
+
+assert 'block.convergence.astral_infuser' in LANG and 'tooltip.convergence.astral_infuser' in LANG
+station = json.loads((RES / 'assets/convergence/blockstates/astral_infuser.json').read_text())
+assert set(station['variants']) == {'active=false', 'active=true'}
+for active in (False, True):
+    suffix = '_active' if active else ''
+    model = json.loads((RES / f'assets/convergence/models/block/astral_infuser{suffix}.json').read_text())
+    assert model['parent'] == 'minecraft:block/cube_bottom_top'
+    for surface in ('side', 'top'):
+        assert model['textures'][surface] == f'convergence:block/astral_infuser_{surface}{suffix}'
+        data = (RES / f'assets/convergence/textures/block/astral_infuser_{surface}{suffix}.png').read_bytes()
+        assert data[:8] == b'\x89PNG\r\n\x1a\n' and struct.unpack('!II', data[16:24]) == (16, 16)
+station_recipe = json.loads((RES / 'data/convergence/recipe/astral_infuser.json').read_text())
+assert station_recipe['key']['F']['item'] == 'convergence:tempered_focus'
+assert {v['item'].split(':')[0] for v in station_recipe['key'].values()} >= {'riftbound', 'copperwake', 'starfall'}
+for recipe in ('verdant_lens', 'tidal_sigil', 'hollow_harness', 'ember_mender'):
+    assert f'infusion.convergence.{recipe}' in LANG
+    assert f'message.convergence.infusion.recipe.{recipe}' in LANG
+for status in ('incomplete', 'night', 'full', 'working', 'ready'):
+    assert f'message.convergence.infusion.status.{status}' in LANG
+print('Astral Infusion valid: original station model + four block textures, four translated trophy-gated formulas, loot/mining tags and recipe discovery.')

@@ -1,6 +1,7 @@
 package com.afuerta.riftbound;
 
 import com.afuerta.riftbound.domain.Aspect;
+import com.afuerta.riftbound.domain.EncounterPattern;
 import com.afuerta.riftbound.domain.HazardSchedule;
 import com.afuerta.riftbound.domain.HazardZone;
 import com.afuerta.riftbound.domain.MobKind;
@@ -172,6 +173,7 @@ public final class TrialManager {
             tell(p, label(tier) + " " + label(aspect) + " trial begins in 5 seconds. Stay within 24 blocks.");
             if (convergence) translated(p, "message.riftbound.convergence.started");
         });
+        announcePattern(active, server, 0);
         trials.put(pos, active);
         offered.decrement(tier.echoCost());
         // Both offerings are consumed only after every activation preflight succeeds.
@@ -186,6 +188,7 @@ public final class TrialManager {
     public void onDeath(LivingEntity entity) {
         for (ActiveTrial trial : trials.values()) {
             trial.session.mobDefeated(entity.getUuid());
+            if (entity.getUuid().equals(trial.standardBearer)) clearStandardGuard(trial);
             if (trial.session.withdraw(entity.getUuid()) && entity instanceof ServerPlayerEntity player) {
                 trial.bar.removePlayer(player);
                 tell(player, "You died and forfeited this trial's reward. Your existing relics are unaffected.");
@@ -200,6 +203,10 @@ public final class TrialManager {
                 managedMobs.remove(previous.getUuid());
                 managedMobs.add(converted.getUuid());
                 trial.allMobs.add(converted.getUuid());
+                if (previous.getUuid().equals(trial.standardBearer)) {
+                    trial.standardBearer = converted.getUuid();
+                    markStandardBearer(converted);
+                }
                 converted.addCommandTag(RiftboundMod.TRIAL_MOB_TAG);
                 converted.setPersistent();
                 converted.setCanPickUpLoot(false);
@@ -228,14 +235,21 @@ public final class TrialManager {
         while (iterator.hasNext()) {
             ActiveTrial trial = iterator.next();
             validate(trial, server);
+            TrialSession.State previousState = trial.session.state();
             TrialSession.Event event = trial.session.advance(now);
+            if (previousState == TrialSession.State.ACTIVE
+                    && trial.session.state() == TrialSession.State.INTERMISSION) {
+                clearStandardGuard(trial);
+                announcePattern(trial, server, trial.session.waveIndex() + 1);
+            }
             if (event == TrialSession.Event.SPAWN_WAVE) spawnWave(trial, server);
             if (trial.session.isTerminal()) {
                 finish(trial, server, now);
                 iterator.remove();
                 continue;
             }
-            tickHazards(trial, server, now);
+            tickEncounter(trial, server, now);
+            if (!trial.session.isTerminal()) tickHazards(trial, server, now);
             if (trial.session.isTerminal()) {
                 finish(trial, server, now);
                 iterator.remove();
@@ -245,7 +259,7 @@ public final class TrialManager {
                 trial.bar.setName(Text.literal(label(trial.session.plan().aspect()) + " Rift · "
                         + label(trial.session.plan().tier()) + " · Wave "
                         + Math.max(1, trial.session.waveIndex() + 1) + "/" + trial.session.plan().waves().size()
-                        + " · " + trial.session.activeMobs().size() + " enemies · "
+                        + " · " + trial.session.remainingMobs() + " enemies · "
                         + ((trial.session.remainingTicks(now) + 19) / 20) + "s"));
                 trial.bar.setPercent((float) trial.session.remainingTicks(now) / trial.session.plan().timeoutTicks());
                 for (int i = 0; i < 16; i++) {
@@ -360,11 +374,13 @@ public final class TrialManager {
             trial.session.fail(TrialSession.FailureReason.SPAWN_FAILED); return;
         }
         List<UUID> spawned = new ArrayList<>();
-        List<UUID> targets = new ArrayList<>(trial.session.eligibleParticipants());
+        List<UUID> targets = trial.session.eligibleParticipants().stream().sorted().toList();
+        clearStandardGuard(trial);
+        trial.waveStarted = clock(server);
         for (int i = 0; i < wave.mobs().size(); i++) {
             MobEntity mob = mobType(wave.mobs().get(i)).create(trial.world);
             if (mob == null) { trial.session.fail(TrialSession.FailureReason.SPAWN_FAILED); return; }
-            BlockPos location = locations.get(i);
+            BlockPos location = locations.get(wave.pattern().spawnSlot(i, locations.size()));
             mob.refreshPositionAndAngles(location.getX() + 0.5, location.getY(), location.getZ() + 0.5, 0, 0);
             mob.initialize(trial.world, trial.world.getLocalDifficulty(location), SpawnReason.EVENT, null);
             // initialize() may create a jockey. Waves contain only the planned enemies.
@@ -382,9 +398,21 @@ public final class TrialManager {
             mob.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE,
                     (int) trial.session.plan().timeoutTicks(), 0, true, false, false));
             mob.addCommandTag(RiftboundMod.TRIAL_MOB_TAG);
+            if (wave.pattern() == EncounterPattern.PINCER) {
+                mob.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED,
+                        EncounterPattern.PINCER_RUSH_TICKS, 0, true, true, true));
+            }
+            if (wave.pattern() == EncounterPattern.STANDARD_BEARER && i == 0) {
+                trial.standardBearer = mob.getUuid();
+                markStandardBearer(mob);
+            }
             if (!targets.isEmpty()) mob.setTarget(server.getPlayerManager().getPlayer(targets.get(i % targets.size())));
             managedMobs.add(mob.getUuid());
             trial.allMobs.add(mob.getUuid());
+            if (i >= wave.pattern().initialCount(wave.mobCount())) {
+                trial.pending.put(mob.getUuid(), mob);
+                continue;
+            }
             if (!trial.world.isSpaceEmpty(mob) || !trial.world.spawnEntity(mob)) {
                 managedMobs.remove(mob.getUuid()); mob.discard();
                 trial.session.fail(TrialSession.FailureReason.SPAWN_FAILED); return;
@@ -392,10 +420,88 @@ public final class TrialManager {
             spawned.add(mob.getUuid());
             trial.world.spawnParticles(ParticleTypes.PORTAL, mob.getX(), mob.getY() + 1, mob.getZ(), 20, .3, .6, .3, .03);
         }
-        trial.session.registerWaveMobs(spawned);
+        trial.session.registerWaveMobs(spawned, trial.pending.keySet());
         for (UUID id : targets) {
             ServerPlayerEntity p = server.getPlayerManager().getPlayer(id);
             if (p != null) tell(p, "Wave " + (trial.session.waveIndex() + 1) + ": " + wave.mobCount() + " enemies.");
+        }
+    }
+
+    private static void announcePattern(ActiveTrial trial, MinecraftServer server, int waveIndex) {
+        EncounterPattern pattern = trial.session.plan().waves().get(waveIndex).pattern();
+        if (pattern == EncounterPattern.STANDARD) return;
+        for (UUID id : trial.session.eligibleParticipants()) {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
+            if (player != null) translated(player, "message.riftbound.encounter."
+                    + pattern.name().toLowerCase(Locale.ROOT));
+        }
+        trial.world.playSound(null, trial.pos, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE,
+                SoundCategory.HOSTILE, .8f, .8f);
+    }
+
+    private static void markStandardBearer(MobEntity mob) {
+        mob.setCustomName(Text.translatable("entity.riftbound.standard_bearer"));
+        mob.setCustomNameVisible(true);
+        mob.setGlowing(true);
+    }
+
+    private static void clearStandardGuard(ActiveTrial trial) {
+        if (trial.standardBearer == null) return;
+        trial.standardBearer = null;
+        for (UUID id : trial.session.activeMobs()) {
+            Entity entity = trial.world.getEntity(id);
+            if (entity instanceof MobEntity mob) mob.removeStatusEffect(StatusEffects.RESISTANCE);
+        }
+    }
+
+    private void tickEncounter(ActiveTrial trial, MinecraftServer server, long now) {
+        if (trial.session.state() != TrialSession.State.ACTIVE) return;
+        if (!trial.pending.isEmpty()) {
+            if (now - trial.waveStarted >= EncounterPattern.REINFORCEMENT_DELAY_TICKS) {
+                // Recheck terrain and collisions at deployment: players can build during the warning.
+                List<UUID> targets = trial.session.eligibleParticipants().stream().sorted().toList();
+                int targetIndex = 0;
+                for (MobEntity mob : trial.pending.values()) {
+                    BlockPos pos = mob.getBlockPos();
+                    if (!isSpawnPositionSafe(trial.world, pos)
+                            || !trial.world.isSpaceEmpty(mob) || !trial.world.spawnEntity(mob)) {
+                        trial.session.fail(TrialSession.FailureReason.SPAWN_FAILED);
+                        return;
+                    }
+                    if (!targets.isEmpty()) mob.setTarget(server.getPlayerManager()
+                            .getPlayer(targets.get(targetIndex++ % targets.size())));
+                    trial.session.deployMob(mob.getUuid());
+                    trial.world.spawnParticles(ParticleTypes.PORTAL, mob.getX(), mob.getY() + 1,
+                            mob.getZ(), 20, .3, .6, .3, .03);
+                }
+                trial.pending.clear();
+                for (UUID id : targets) {
+                    ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
+                    if (player != null) translated(player, "message.riftbound.encounter.reinforcements_arrived");
+                }
+                trial.world.playSound(null, trial.pos, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE,
+                        SoundCategory.HOSTILE, 1.0f, 1.3f);
+            } else if (now % 5 == 0) {
+                for (MobEntity mob : trial.pending.values()) {
+                    trial.world.spawnParticles(ParticleTypes.END_ROD, mob.getX(), mob.getY() + .5,
+                            mob.getZ(), 2, .4, .3, .4, 0);
+                }
+            }
+        }
+        if (trial.standardBearer == null || now % EncounterPattern.GUARD_REFRESH_TICKS != 0) return;
+        Entity bearer = trial.world.getEntity(trial.standardBearer);
+        if (!(bearer instanceof MobEntity leader) || !leader.isAlive()) {
+            clearStandardGuard(trial);
+            return;
+        }
+        // Only this wave's registered allies receive guard, never the leader or ordinary mobs.
+        for (UUID id : trial.session.activeMobs()) {
+            Entity entity = trial.world.getEntity(id);
+            if (entity instanceof MobEntity ally && ally != leader && ally.isAlive()
+                    && ally.squaredDistanceTo(leader) <= EncounterPattern.GUARD_RADIUS * EncounterPattern.GUARD_RADIUS) {
+                ally.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE,
+                        EncounterPattern.GUARD_EFFECT_TICKS, 0, true, true, true));
+            }
         }
     }
 
@@ -419,20 +525,27 @@ public final class TrialManager {
             int z = anchor.getZ() + (int) Math.round(Math.sin(angle) * radius);
             for (int dy = 4; dy >= -4; dy--) {
                 BlockPos p = new BlockPos(x, anchor.getY() + dy, z);
-                // Spiders are wider than one block; check their full footprint, too.
-                boolean clear = world.isChunkLoaded(p)
-                        && world.getBlockState(p.down()).isSolidBlock(world, p.down());
-                for (int dx = -1; dx <= 1 && clear; dx++) for (int dz = -1; dz <= 1 && clear; dz++) {
-                    BlockPos foot = p.add(dx, 0, dz);
-                    clear = world.isChunkLoaded(foot)
-                            && world.getBlockState(foot).getCollisionShape(world, foot).isEmpty()
-                            && world.getBlockState(foot.up()).getCollisionShape(world, foot.up()).isEmpty()
-                            && world.getFluidState(foot).isEmpty() && world.getFluidState(foot.up()).isEmpty();
+                if (isSpawnPositionSafe(world, p)) {
+                    if (!result.contains(p)) result.add(p);
+                    break;
                 }
-                if (clear) { if (!result.contains(p)) result.add(p); break; }
             }
         }
         return result;
+    }
+
+    private static boolean isSpawnPositionSafe(ServerWorld world, BlockPos p) {
+        if (!world.isChunkLoaded(p) || !world.getBlockState(p.down()).isSolidBlock(world, p.down())) return false;
+        // Spiders can straddle chunks. Recheck the full reserved footprint before querying
+        // collision/fluid state; an unloaded neighboring chunk must never be force-loaded.
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            BlockPos foot = p.add(dx, 0, dz);
+            if (!world.isChunkLoaded(foot)
+                    || !world.getBlockState(foot).getCollisionShape(world, foot).isEmpty()
+                    || !world.getBlockState(foot.up()).getCollisionShape(world, foot.up()).isEmpty()
+                    || !world.getFluidState(foot).isEmpty() || !world.getFluidState(foot.up()).isEmpty()) return false;
+        }
+        return true;
     }
 
     private void finish(ActiveTrial trial, MinecraftServer server, long now) {
@@ -466,6 +579,9 @@ public final class TrialManager {
     private void cleanup(ActiveTrial trial) {
         if (trial.hazards != null) trial.hazards.stop();
         trial.zone = null;
+        clearStandardGuard(trial);
+        for (MobEntity mob : trial.pending.values()) mob.discard();
+        trial.pending.clear();
         trial.bar.clearPlayers();
         for (UUID id : trial.allMobs) {
             managedMobs.remove(id);
@@ -510,6 +626,9 @@ public final class TrialManager {
         final BlockPos pos;
         final TrialSession session;
         final Set<UUID> allMobs = new HashSet<>();
+        final Map<UUID, MobEntity> pending = new LinkedHashMap<>();
+        long waveStarted;
+        UUID standardBearer;
         final boolean convergence;
         final Item concordance;
         final HazardSchedule hazards;

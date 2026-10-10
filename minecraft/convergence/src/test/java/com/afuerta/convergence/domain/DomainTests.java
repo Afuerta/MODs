@@ -80,6 +80,30 @@ public final class DomainTests {
             CommissionCatalog.current(0).requirements().put("x:a", 1);
             throw new AssertionError("Requirements must be immutable");
         } catch (UnsupportedOperationException expected) { checks++; }
+        Set<String> infusionOutputs = new HashSet<>();
+        Set<String> infusionInputs = new HashSet<>();
+        check(InfusionCatalog.all().size() == 4, "Four authored infusion recipes");
+        for (var infusion : InfusionCatalog.all()) {
+            check(infusionOutputs.add(infusion.output()), "Unique infusion outputs");
+            check(infusion.ingredients().get(3).count() >= 1, "Every infusion needs a fresh earned trophy");
+            for (int slot = 0; slot < InfusionCatalog.INPUTS; slot++) {
+                var ingredient = infusion.ingredients().get(slot);
+                if (ingredient == null) continue;
+                infusionInputs.add(ingredient.item());
+                check(InfusionCatalog.accepts(slot, ingredient.item()), "Ingredient routed into its real input slot");
+                check(!InfusionCatalog.accepts(7, ingredient.item()), "Output slots never accept automation inputs");
+                check(!InfusionCatalog.accepts(-1, ingredient.item()), "Negative slots safely reject inputs");
+            }
+            for (String namespace : new String[]{"riftbound:", "copperwake:", "starfall:"})
+                check(infusion.ingredients().stream().filter(java.util.Objects::nonNull).anyMatch(i -> i.item().startsWith(namespace)),
+                        "Every infusion includes all three worlds");
+        }
+        check(infusionOutputs.stream().noneMatch(infusionInputs::contains), "Infusion results cannot fund infusion inputs");
+        check(infusionOutputs.stream().noneMatch(allInputs::contains), "Infusion gear cannot fund commission inputs");
+        check(!InfusionCatalog.accepts(6, "convergence:concordance"), "Trophy never enters fuel slot");
+        expectIllegal(() -> new InfusionCatalog.Ingredient("invalid", 1));
+        expectIllegal(() -> new InfusionCatalog.Ingredient("riftbound:verdant_echo", 0));
+        expectIllegal(() -> new InfusionCatalog.Ingredient("riftbound:verdant_echo", 65));
         System.out.println("Convergence domain checks passed: " + checks);
     }
 

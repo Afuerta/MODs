@@ -5,6 +5,10 @@ loop, a complete new realm, three authored landmarks and three combat silhouette
 Version 0.2 extends this loop to 22 authored deliveries and adds the Survey Flare
 and Field Repairer, with crafting, guidance, localization and server tests. The
 three existing constructs, dimension and structure templates retain their behavior.
+Version 0.3 adds two original expedition destinations: Siphon Gardens and
+Switchyard Depots, with distinct traversal routes, finite guarded exploration
+caches and deterministic template sources. All prior landmark templates and identities are preserved; their zero-depth
+jigsaw definitions are corrected so their natural starts actually generate.
 The next passes should add reasons to revisit these systems, without splitting the
 mod into disconnected feature lists.
 
@@ -21,8 +25,9 @@ mod into disconnected feature lists.
 
 ## Exploration expansion
 
-Build a derailed cargo train, a flooded pump station and an underground records
-vault. Each should teach one navigation/combat rule, have different routes to its
+The pump-gallery/aqueduct and freight/dispatch-office destinations now exist.
+Next build a derailed cargo train and an underground records vault. Each should
+teach one navigation/combat rule, have different routes to its
 loot, and use its own recognizable silhouette. Add noncombat discoveries: machine
 messages, salvage maps, cosmetic nameplates, and a rare friendly maintenance bot.
 Keep all builds authored and reproducible; record the license and provenance if

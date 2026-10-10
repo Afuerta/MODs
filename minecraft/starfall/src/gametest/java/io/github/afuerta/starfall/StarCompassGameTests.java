@@ -137,6 +137,35 @@ public final class StarCompassGameTests implements FabricGameTest {
         context.complete();
     }
 
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void shrinkingBorderPrunesUnreachableTargetsWithoutLoadingValidMemories(TestContext context) {
+        var world = context.getWorld();
+        var border = world.getWorldBorder();
+        double previousCenterX = border.getCenterX(), previousCenterZ = border.getCenterZ(), previousSize = border.getSize();
+        var inside = new BlockPos(1_400_000, 70, -1_400_000);
+        var outside = new BlockPos(1_600_000, 70, -1_400_000);
+        var invalidHeight = new BlockPos(1_400_000, world.getTopY(), -1_400_000);
+        var impacts = new StarImpactData();
+        impacts.record(inside, 1); impacts.record(outside, 2); impacts.record(invalidHeight, 3);
+        try {
+            border.setCenter(0, 0); border.setSize(4_000_000);
+            context.assertFalse(world.isChunkLoaded(inside), "Valid memory fixture must start unloaded");
+            context.assertFalse(world.isChunkLoaded(outside), "Border memory fixture must start unloaded");
+            context.assertEquals(Optional.of(outside), impacts.nearest(world, outside),
+                    "Target inside the original border was incorrectly rejected");
+            context.assertEquals(2, impacts.size(), "Outside-build-limit target was not pruned");
+            border.setSize(3_000_000);
+            context.assertEquals(Optional.of(inside), impacts.nearest(world, outside),
+                    "Shrinking border left an unreachable nearest target");
+            context.assertEquals(1, impacts.size(), "Border pruning removed a valid unloaded memory or retained an invalid one");
+            context.assertFalse(world.isChunkLoaded(inside), "Border pruning force-loaded a valid memory");
+            context.assertFalse(world.isChunkLoaded(outside), "Border pruning force-loaded an invalid memory");
+        } finally {
+            border.setCenter(previousCenterX, previousCenterZ); border.setSize(previousSize);
+        }
+        context.complete();
+    }
+
     @GameTest(templateName = "starfall_test:arena", tickLimit = 60)
     public void compassRefreshesAfterMiningAndSpinsWhenNoTargetRemains(TestContext context) {
         var world = context.getWorld();
