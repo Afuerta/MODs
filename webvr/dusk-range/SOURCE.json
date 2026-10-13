@@ -1,0 +1,158 @@
+{
+  "source": "Vercel live deployment recovered for the user's VR game improvement request",
+  "deploymentId": "dpl_cfWpd1ffppCQ5DUSjAjXUf8p3F1r",
+  "deploymentHost": "dusk-range-antqhnllz-mithril98.vercel.app",
+  "projectId": "prj_5XB24bOPID584Z7YmJBaCvnm8fjv",
+  "retrievedDate": "2026-10-13",
+  "sourceFiles": [
+    {
+      "path": "src/index.html",
+      "sha1": "b95ea3bfe5118b86320f5b3cd98bb75328092013"
+    },
+    {
+      "path": "src/js/01.js",
+      "sha1": "eea2cf94fa48b29a696510debf6b0dd8414db3f4"
+    },
+    {
+      "path": "src/js/02.js",
+      "sha1": "c32ef7f73d03b80ab4436050e17468ddc87c6f80"
+    },
+    {
+      "path": "src/js/03.js",
+      "sha1": "7cc1bbd7b979e42f014d9af02ef141ee5b4beec7"
+    },
+    {
+      "path": "src/js/04.js",
+      "sha1": "66b3718d8782399fde5ec060d9cc8ecc793c2162"
+    },
+    {
+      "path": "src/js/05.js",
+      "sha1": "acee4c0dbdc520d8fd54df86cd58b83cbad19a4b"
+    },
+    {
+      "path": "src/js/06.js",
+      "sha1": "93e252c6983cc9eae6c7a22c80e919c1b2663848"
+    },
+    {
+      "path": "src/js/07.js",
+      "sha1": "d06043c2628f70fe58c096ba9a36d2e7f7339778"
+    },
+    {
+      "path": "src/js/08.js",
+      "sha1": "f0125875a6e3043fd318de4ccf138e285e5781b5"
+    },
+    {
+      "path": "src/js/09.js",
+      "sha1": "7d27d81356852ea081c421167537de9b23c7ef07"
+    },
+    {
+      "path": "src/js/10.js",
+      "sha1": "c89d6faa9c361e55a9f110536675fdb93a463d12"
+    },
+    {
+      "path": "src/js/11.js",
+      "sha1": "00a8bfd7a9ea401d2ddb40240d48bfd95402c095"
+    },
+    {
+      "path": "src/js/12.js",
+      "sha1": "08a6b807fbe4561cda62a3a2d62a6d36f9193ccc"
+    },
+    {
+      "path": "src/js/13.js",
+      "sha1": "7b5db0d085117a79bd4ff7f32294d27a29de3460"
+    },
+    {
+      "path": "src/js/14.js",
+      "sha1": "769a9afdc834f2f9b194486d2e13aba90327ba74"
+    },
+    {
+      "path": "src/js/15.js",
+      "sha1": "5915a11acde56f539284d5ec53de085787e97319"
+    },
+    {
+      "path": "src/js/16.js",
+      "sha1": "2afb9f985da8a7a10283ad18fc1a8c7807a22eed"
+    },
+    {
+      "path": "src/js/17.js",
+      "sha1": "80feb1c2e7776fdc6ffc1266d333da9e343f0a5c"
+    },
+    {
+      "path": "src/js/18.js",
+      "sha1": "6f3d1c0a0a9fc953429b62535bdcfbb926bce860"
+    },
+    {
+      "path": "src/js/19.js",
+      "sha1": "15ca20b15301196c37738554f098f2c329bc72a0"
+    },
+    {
+      "path": "src/js/20.js",
+      "sha1": "cb3900c61db8526150bcb02017a06e76b4b7d4e6"
+    },
+    {
+      "path": "src/js/21.js",
+      "sha1": "16237c22a5db8e70a8e72a3f2044015fe1ab597e"
+    },
+    {
+      "path": "src/js/22.js",
+      "sha1": "f3f4cc1a20db18e4e4ca2c8f16e4fbbb4c5d61ad"
+    },
+    {
+      "path": "src/js/23.js",
+      "sha1": "81f3da0c2ea951696a6cb8f23c1a23093c43857b"
+    },
+    {
+      "path": "src/js/24.js",
+      "sha1": "0701cbd9211f44636f9c455bafe4abc7fe9d551e"
+    },
+    {
+      "path": "src/js/25.js",
+      "sha1": "f2dd651d2381e47511a9a325cdeee193d8bff151"
+    },
+    {
+      "path": "src/js/26.js",
+      "sha1": "2de3d7fa67684f90ebb4af5480f22f988c3fc886"
+    },
+    {
+      "path": "src/js/27.js",
+      "sha1": "9611e3b5d7ece6e5b3d2215c2bd497bc83877a27"
+    },
+    {
+      "path": "src/js/28.js",
+      "sha1": "83ffb00c3f18bc03fa96c55eb2240b555f5be01d"
+    },
+    {
+      "path": "src/js/29.js",
+      "sha1": "21cd2d0ca57cb7b706df93f1004e19d16c6c846f"
+    },
+    {
+      "path": "src/js/30.js",
+      "sha1": "28efdddc86b8ebe776e3e3ede9de0aec177c10ee"
+    },
+    {
+      "path": "src/js/31.js",
+      "sha1": "6ba92558ea2550f6383eee6ba9d8abd0375558a4"
+    },
+    {
+      "path": "src/js/32.js",
+      "sha1": "073694d7dbafe4f32ed91107cf37149142d47e2d"
+    },
+    {
+      "path": "src/js/33.js",
+      "sha1": "422b7b2926aa01def75ae4794748ab273e506d69"
+    },
+    {
+      "path": "src/js/34.js",
+      "sha1": "988e7ffbec7a55327e1a184691ea1bbb055a34d4"
+    },
+    {
+      "path": "src/js/35.js",
+      "sha1": "17dac055f0fcd21f1fa50c5b3675c75593263a5d"
+    },
+    {
+      "path": "src/js/36.js",
+      "sha1": "167fab75ce86954610039a30c02a03759e6666dc"
+    }
+  ],
+  "note": "Original source file digests reported by Vercel before this iteration. Current files are formatted and modified; these are provenance digests, not current checksums."
+}

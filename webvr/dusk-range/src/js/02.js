@@ -1,0 +1,220 @@
+"use strict";
+const TAU = Math.PI * 2,
+  clamp = (t, n, c) => (t < n ? n : t > c ? c : t),
+  lerp = (t, n, c) => t + (n - t) * c,
+  rand = (t, n) => t + Math.random() * (n - t),
+  smooth = (t, n, c) => {
+    const s = clamp((c - t) / (n - t), 0, 1);
+    return s * s * (3 - 2 * s);
+  },
+  easeOutBack = (t) =>
+    1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2),
+  cross = (t, n) => [
+    t[1] * n[2] - t[2] * n[1],
+    t[2] * n[0] - t[0] * n[2],
+    t[0] * n[1] - t[1] * n[0],
+  ],
+  norm = (t) => {
+    const n = Math.hypot(t[0], t[1], t[2]) || 1;
+    return [t[0] / n, t[1] / n, t[2] / n];
+  };
+function m4() {
+  const t = new Float32Array(16);
+  return ((t[0] = t[5] = t[10] = t[15] = 1), t);
+}
+function mul(t, n, c) {
+  const s = n[0],
+    e = n[1],
+    r = n[2],
+    i = n[3],
+    h = n[4],
+    M = n[5],
+    v = n[6],
+    a = n[7],
+    b = n[8],
+    _ = n[9],
+    f = n[10],
+    x = n[11],
+    y = n[12],
+    I = n[13],
+    d = n[14],
+    k = n[15];
+  for (let l = 0; l < 16; l += 4) {
+    const z = c[l],
+      A = c[l + 1],
+      B = c[l + 2],
+      F = c[l + 3];
+    ((t[l] = z * s + A * h + B * b + F * y),
+      (t[l + 1] = z * e + A * M + B * _ + F * I),
+      (t[l + 2] = z * r + A * v + B * f + F * d),
+      (t[l + 3] = z * i + A * a + B * x + F * k));
+  }
+  return t;
+}
+function invert(t, n) {
+  const c = n[0],
+    s = n[1],
+    e = n[2],
+    r = n[3],
+    i = n[4],
+    h = n[5],
+    M = n[6],
+    v = n[7],
+    a = n[8],
+    b = n[9],
+    _ = n[10],
+    f = n[11],
+    x = n[12],
+    y = n[13],
+    I = n[14],
+    d = n[15],
+    k = c * h - s * i,
+    l = c * M - e * i,
+    z = c * v - r * i,
+    A = s * M - e * h,
+    B = s * v - r * h,
+    F = e * v - r * M,
+    D = a * y - b * x,
+    O = a * I - _ * x,
+    P = a * d - f * x,
+    T = b * I - _ * y,
+    U = b * d - f * y,
+    g = _ * d - f * I;
+  let u = k * g - l * U + z * T + A * P - B * O + F * D;
+  return (
+    u &&
+      ((u = 1 / u),
+      (t[0] = (h * g - M * U + v * T) * u),
+      (t[1] = (e * U - s * g - r * T) * u),
+      (t[2] = (y * F - I * B + d * A) * u),
+      (t[3] = (_ * B - b * F - f * A) * u),
+      (t[4] = (M * P - i * g - v * O) * u),
+      (t[5] = (c * g - e * P + r * O) * u),
+      (t[6] = (I * z - x * F - d * l) * u),
+      (t[7] = (a * F - _ * z + f * l) * u),
+      (t[8] = (i * U - h * P + v * D) * u),
+      (t[9] = (s * P - c * U - r * D) * u),
+      (t[10] = (x * B - y * z + d * k) * u),
+      (t[11] = (b * z - a * B - f * k) * u),
+      (t[12] = (h * O - i * T - M * D) * u),
+      (t[13] = (c * T - s * O + e * D) * u),
+      (t[14] = (y * l - x * A - I * k) * u),
+      (t[15] = (a * A - b * l + _ * k) * u)),
+    t
+  );
+}
+function perspective(t, n, c, s, e) {
+  const r = 1 / Math.tan(n / 2);
+  return (
+    t.fill(0),
+    (t[0] = r / c),
+    (t[5] = r),
+    (t[10] = (e + s) / (s - e)),
+    (t[11] = -1),
+    (t[14] = (2 * e * s) / (s - e)),
+    t
+  );
+}
+function trs(t, n, c, s, e, r, i, h, M, v) {
+  const a = Math.cos(e),
+    b = Math.sin(e),
+    _ = Math.cos(r),
+    f = Math.sin(r),
+    x = Math.cos(i),
+    y = Math.sin(i);
+  return (
+    (t[0] = (a * x + b * f * y) * h),
+    (t[1] = _ * y * h),
+    (t[2] = (-b * x + a * f * y) * h),
+    (t[3] = 0),
+    (t[4] = (-a * y + b * f * x) * M),
+    (t[5] = _ * x * M),
+    (t[6] = (b * y + a * f * x) * M),
+    (t[7] = 0),
+    (t[8] = b * _ * v),
+    (t[9] = -f * v),
+    (t[10] = a * _ * v),
+    (t[11] = 0),
+    (t[12] = n),
+    (t[13] = c),
+    (t[14] = s),
+    (t[15] = 1),
+    t
+  );
+}
+function beam(t, n, c, s, e) {
+  const r = c,
+    i = Math.abs(r[1]) > 0.98 ? [1, 0, 0] : [0, 1, 0],
+    h = norm(cross(i, r)),
+    M = cross(r, h);
+  return (
+    (t[0] = h[0] * e),
+    (t[1] = h[1] * e),
+    (t[2] = h[2] * e),
+    (t[3] = 0),
+    (t[4] = M[0] * e),
+    (t[5] = M[1] * e),
+    (t[6] = M[2] * e),
+    (t[7] = 0),
+    (t[8] = r[0] * s),
+    (t[9] = r[1] * s),
+    (t[10] = r[2] * s),
+    (t[11] = 0),
+    (t[12] = n[0]),
+    (t[13] = n[1]),
+    (t[14] = n[2]),
+    (t[15] = 1),
+    t
+  );
+}
+function orient(t, n, c) {
+  const s = [-c[0], -c[1], -c[2]],
+    e = Math.abs(s[1]) > 0.98 ? [1, 0, 0] : [0, 1, 0],
+    r = norm(cross(e, s)),
+    i = cross(s, r);
+  return (
+    (t[0] = r[0]),
+    (t[1] = r[1]),
+    (t[2] = r[2]),
+    (t[3] = 0),
+    (t[4] = i[0]),
+    (t[5] = i[1]),
+    (t[6] = i[2]),
+    (t[7] = 0),
+    (t[8] = s[0]),
+    (t[9] = s[1]),
+    (t[10] = s[2]),
+    (t[11] = 0),
+    (t[12] = n[0]),
+    (t[13] = n[1]),
+    (t[14] = n[2]),
+    (t[15] = 1),
+    t
+  );
+}
+const xf = (t, n) => [
+  t[0] * n[0] + t[4] * n[1] + t[8] * n[2] + t[12],
+  t[1] * n[0] + t[5] * n[1] + t[9] * n[2] + t[13],
+  t[2] * n[0] + t[6] * n[1] + t[10] * n[2] + t[14],
+];
+function mulberry(t) {
+  return () => {
+    ((t |= 0), (t = (t + 1831565813) | 0));
+    let n = Math.imul(t ^ (t >>> 15), 1 | t);
+    return (
+      (n = (n + Math.imul(n ^ (n >>> 7), 61 | n)) ^ n),
+      ((n ^ (n >>> 14)) >>> 0) / 4294967296
+    );
+  };
+}
+const hex = (t) => {
+    const n = parseInt(t.slice(1), 16);
+    return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+  },
+  mix3 = (t, n, c) => [
+    lerp(t[0], n[0], c),
+    lerp(t[1], n[1], c),
+    lerp(t[2], n[2], c),
+  ],
+  scale3 = (t, n) => [t[0] * n, t[1] * n, t[2] * n],
+  polar = (t, n, c = 0) => [Math.sin(t) * n, c, -Math.cos(t) * n];
