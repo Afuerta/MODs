@@ -113,6 +113,8 @@ const GENRES = [
   };
 function resetRun() {
   clearGameEffects();
+  resetExpedition();
+  R.extracted = false;
   (Object.assign(R, {
     kind: "survival",
     wave: 0,
@@ -350,8 +352,9 @@ function pickCrate(e, t) {
       puff([n.x, n.y, n.z], 5, [0.75, 0.6, 0.5], 0.3, 1));
   ((R.phase = "picked"), (R.phaseT = 0));
 }
-function endRun() {
-  if (S.mode !== "run") return;
+function endRun(extracted = false) {
+  if (S.mode !== "run" || (extracted && !canExtract())) return;
+  R.extracted = extracted;
   const e = R.kind === "siege",
     t = R.kind === "td";
   ((S.mode = "results"),
@@ -366,9 +369,15 @@ function endRun() {
     }, 2600),
     (R.lvlUp = null),
     (targets = targets.filter((s) => s.kind !== "lvl" && s.kind !== "loot")),
-    sfx.die(),
+    extracted ? sfx.clear() : sfx.die(),
     showBanner(
-      e ? "THE DEAD TAKE YOU" : t ? "THE CITY FALLS" : "YOU'RE DOWN",
+      extracted
+        ? "EXTRACTION COMPLETE"
+        : e
+          ? "THE DEAD TAKE YOU"
+          : t
+            ? "THE CITY FALLS"
+            : "YOU'RE DOWN",
       "Wave " + R.wave + "  ·  +" + n + " souls",
     ),
     clearEnemies(),

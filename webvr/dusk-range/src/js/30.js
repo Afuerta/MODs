@@ -80,6 +80,7 @@ const STREAK = [
   "GODLIKE",
 ];
 function onKillReward(t, s) {
+  careerKill(t);
   if (
     ((R.stat.kills = (R.stat.kills || 0) + 1),
     (R.stat["k_" + t.type] = (R.stat["k_" + t.type] || 0) + 1),
@@ -593,6 +594,10 @@ function dropLoot(t, s, e) {
     sfx.loot(t, s === "gun" ? e : s === "mod" ? 1 : 0));
 }
 function takeLoot(t, s) {
+  if (t.loot.type === "extract") {
+    extractRun();
+    return;
+  }
   const e = t.loot,
     o = s.hand === "left" ? "left" : "right",
     n = [t.x, t.y + 0.5, t.z];

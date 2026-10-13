@@ -192,6 +192,7 @@ function spawnTarget(e) {
 }
 function resetToMenu() {
   clearGameEffects();
+  resetExpedition();
   ((MAP.cur !== "range" || MAP.next) &&
     ((MAP.cur = "range"),
     (MAP.next = null),

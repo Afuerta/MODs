@@ -652,6 +652,7 @@ function updateEShots(s) {
   for (let t = eshots.length - 1; t >= 0; t--) {
     const a = eshots[t];
     if (a) {
+      const previous = a.p.slice();
       if (((a.life -= s), a.kind === "rift")) {
         if (updateRifts(a, s) || a.life <= 0) {
           const o = eshots.indexOf(a);
@@ -705,7 +706,7 @@ function updateEShots(s) {
         ((a.p[0] += a.v[0] * s),
           (a.p[1] += a.v[1] * s),
           (a.p[2] += a.v[2] * s));
-        const o = headDist(a.p);
+        const o = sweptHeadDistance(previous, a.p);
         if (o < a.r) {
           (eshots.splice(t, 1),
             flashes.push({ p: a.p.slice(), t: 0, s: 1, c: a.col }),
@@ -734,10 +735,10 @@ function damageEnemy(s, t, a, o, n, h, i) {
     l = r >= 2 && !h;
   let f = t * R.dmg * (l ? (i || r) * (R.perks.deadeye ? 1.5 : 1) : 1);
   if (s.T.onHit && s.T.onHit(s, f, a, o)) return;
+  if (s.elite === "armored" && !l) f *= 0.6;
   ((s.hp -= f),
     (s.flash = 0.09),
     n && !s.T.boss && ((s.kx += n[0] * 0.18), (s.kz += n[2] * 0.18)),
-    s.elite === "armored" && !l && (f *= 0.6),
     (s.lastCrit = l),
     TD.quiet || (inRun() && dmgNumber(o, f, l), sfx.ehit(o, s.T.metal)));
   const c = s.T.gib;

@@ -1,3 +1,16 @@
+# VR38 validation — 2026-10-13
+
+- Build passes: 39 ordered scripts parse, local CSS exists, 50 DOM IDs are unique.
+- 37 Node regressions pass, covering repeated milestone claims/reload, guaranteed supplies, extraction eligibility/duplicates, boss/queue preservation, bounded attacks, warned strikes, shield weakspots, dodge costs/cooldowns, VR opt-in/snap latching, swept collision, and intermission cleanup alongside all VR37 regressions.
+- Real WebGL2 browser checks pass: three new enemy models, eight fan shots plus three mortar zones, screen sprint/dodge, paused hazard/cooldown/position freeze, and extraction with soul payout.
+- Night Siege and Gridlock queues include the variants; both render without JavaScript or WebGL errors.
+- At a 390-pixel phone viewport, lobby layout fits and sustained touch Move and Dodge work.
+- Physical Quest rendering/controller feel, optional stick locomotion comfort, passthrough and headset performance remain unverified.
+
+VR38 preview deployment is recorded in the PR and conversation after it completes.
+
+---
+
 # VR37 validation — 2026-10-13
 
 ## Completed

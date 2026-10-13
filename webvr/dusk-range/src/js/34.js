@@ -74,6 +74,7 @@ function mouseDir() {
 }
 const keyOn = (...e) => (e.some((n) => keys.has(n)) ? 1 : 0);
 function flatControls(e) {
+  const speedMultiplier = flatMobility(e) || 1;
   let n = keyOn("q", "arrowleft") - keyOn("e", "arrowright");
   if (
     (inRun() &&
@@ -88,12 +89,12 @@ function flatControls(e) {
       o = keyOn("d") - keyOn("a");
     if (t || o) {
       const i = Math.hypot(t, o),
-        a = (2.1 * (1 - flatCrouch * 0.45) * e) / i,
+        a = (2.6 * speedMultiplier * (1 - flatCrouch * 0.45) * e) / i,
         d = -Math.sin(baseYaw),
         l = -Math.cos(baseYaw),
         r = Math.cos(baseYaw),
         c = -Math.sin(baseYaw);
-      [PL.pos[0], PL.pos[1]] = clampRoom(
+      [PL.pos[0], PL.pos[1]] = clampMovement(
         PL.pos[0] + (d * t + r * o) * a,
         PL.pos[1] + (l * t + c * o) * a,
       );
@@ -102,8 +103,7 @@ function flatControls(e) {
     ((PL.pos[0] *= Math.max(0, 1 - e * 3)),
       (PL.pos[1] *= Math.max(0, 1 - e * 3)));
   flatCrouch +=
-    ((keyOn("c", "control", "shift") ? 1 : 0) - flatCrouch) *
-    Math.min(1, e * 12);
+    ((keyOn("c", "control") ? 1 : 0) - flatCrouch) * Math.min(1, e * 12);
 }
 function flatFrame(e) {
   if ((requestAnimationFrame(flatFrame), xrSession)) return;
@@ -341,7 +341,8 @@ const releaseTrigger = () => {
     (keys.add(n),
       (n.startsWith("arrow") || n === " ") && e.preventDefault(),
       n === " " && !e.repeat && ((flatGun.held = !0), (flatGun.pullT = 0.25)),
-      n === "r" && startReload(flatGun));
+      n === "r" && startReload(flatGun),
+      n === "f" && !e.repeat && dodgeFlat());
   }),
   addEventListener("keyup", (e) => {
     const n = e.key.toLowerCase();
@@ -380,7 +381,7 @@ function playFlat() {
     (reticle.hidden = !1),
     (hint.hidden = !1),
     (hint.textContent =
-      "Click fire · Right-click aim · R reload · WASD move · C duck · Q/E turn · Esc pause"),
+      "Click fire · Right-click aim · R reload · WASD move · Shift sprint · F dodge · C duck · Q/E turn · Esc pause"),
     (mouse.x = 0),
     (mouse.y = 0),
     (reticle.style.transform = `translate(${innerWidth / 2}px, ${innerHeight / 2}px)`),

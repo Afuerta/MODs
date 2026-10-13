@@ -240,7 +240,8 @@ function buildFrame() {
       : MAP.cur === "city"
         ? buildCityFrame()
         : buildRangeFrame(),
-    tdBuildFrame());
+    tdBuildFrame(),
+    buildExpeditionFrame());
   for (const o of flashes) {
     const s = 1 - o.t / (o.muzzle ? 0.06 : 0.12);
     s > 0 &&
@@ -835,6 +836,7 @@ function renderScene(o, s, a, i) {
     gl.uniform1f(INST.u.uFog, MR.on ? 0 : 0.82),
     gl.uniform1f(INST.u.uEmit, 0.22),
     bdraw(B.cube),
+    bdraw(B.rift),
     gl.uniform1f(INST.u.uEmit, 0.5),
     bdraw(B.shard),
     gl.uniform1f(INST.u.uEmit, 0.25),

@@ -58,6 +58,7 @@ function update(i) {
     updatePShots(t),
     updateFields(t),
     rewardsTick(t, i),
+    expeditionTick(t),
     audioTick(i));
   for (let a = targets.length - 1; a >= 0; a--) {
     const e = targets[a];

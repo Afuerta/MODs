@@ -600,11 +600,12 @@
               <h3>On this screen</h3>
               <p>
                 Click or Space to fire · Right-click to aim · R to reload<br />WASD
-                to move · Q/E to turn · C to duck · Esc to pause
+                to move · Shift to sprint · F to dodge · Q/E to turn · C to duck
+                · Esc to pause
               </p>
               <p>
                 On touch screens, tap a target to fire. Use the on-screen
-                buttons to turn, duck, and reload.
+                buttons to move, turn, dodge, duck, and reload.
               </p>
             </div>
             <div>
@@ -612,7 +613,8 @@
               <p>
                 Trigger to fire · Aim down or press A/X to reload<br />Grip with
                 your other hand to steady a long gun. Move within your play area
-                to dodge.
+                to dodge. Optional VR sticks: left stick to move, right stick to
+                snap turn.
               </p>
             </div>
             <label class="fov"
@@ -625,6 +627,13 @@
                 step="1"
                 value="75"
               /><output id="fovOut">75°</output></label
+            >
+            <label class="setting-row"
+              >VR movement
+              <select id="vrMoveIn">
+                <option value="room">Room-scale only</option>
+                <option value="sticks">Thumbsticks + snap turn</option>
+              </select></label
             >
             <label class="setting-row"
               >Screen graphics
@@ -647,6 +656,10 @@
             >
           </div>
         </details>
+        <div class="career-journal">
+          <strong>FIELD JOURNAL</strong>
+          <p id="careerJournal"></p>
+        </div>
         <p class="best">PERSONAL BESTS <b id="bestOut">—</b></p>
       </footer>
     </main>
@@ -685,13 +698,12 @@
       <p id="objectiveDetail"></p>
     </aside>
     <div id="touchControls" hidden aria-label="Touch controls">
-      <button type="button" data-control="q" aria-label="Turn left">
-        ↶ Turn</button
+      <button type="button" data-control="q" aria-label="Turn left">↶</button
+      ><button type="button" data-control="w">Move</button
       ><button type="button" data-control="c">Duck</button
+      ><button type="button" data-control="f">Dodge</button
       ><button type="button" data-control="r">Reload</button
-      ><button type="button" data-control="e" aria-label="Turn right">
-        Turn ↷
-      </button>
+      ><button type="button" data-control="e" aria-label="Turn right">↷</button>
     </div>
     <div id="hud" hidden>
       <div id="hudHearts" aria-label="Health"></div>
@@ -699,6 +711,13 @@
       <div id="hudXP"></div>
       <div id="hudTasks"></div>
       <div id="hudGun"></div>
+      <div id="mobilityHud">
+        <span id="staminaOut">STAMINA 100</span
+        ><span id="dodgeOut">DODGE READY · F</span>
+      </div>
+      <button id="extractBtn" class="btn-flat" type="button" hidden>
+        Extract &amp; bank +25%
+      </button>
     </div>
     <div id="arrows" aria-hidden="true"></div>
     <script src="js/01.js"></script>
@@ -733,6 +752,7 @@
     <script src="js/29.js"></script>
     <script src="js/30.js"></script>
     <script src="js/31.js"></script>
+    <script src="js/expedition.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/32.js"></script>
     <script src="js/33.js"></script>

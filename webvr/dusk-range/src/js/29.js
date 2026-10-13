@@ -81,6 +81,9 @@ const META = (() => {
     souls: metaInteger(metaInteger(e && e.souls) + refund),
     total: metaInteger(e && e.total),
     up: s,
+    ...(e && e.career && typeof e.career === "object"
+      ? { career: e.career }
+      : {}),
   };
   if (refund > 0) {
     try {
@@ -106,7 +109,14 @@ function awardSouls() {
             : R.kills * 0.35 + R.wave * 3 + R.bossKills * 15,
       ),
     );
-  return ((META.souls += s), (META.total += s), saveMeta(), (R.souls = s), s);
+  const reward = R.extracted ? Math.ceil(s * 1.25) : s;
+  return (
+    (META.souls += reward),
+    (META.total += reward),
+    saveMeta(),
+    (R.souls = reward),
+    reward
+  );
 }
 function buyUpgrade(e) {
   const s = UPGRADES[e];

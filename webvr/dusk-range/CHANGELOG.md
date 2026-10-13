@@ -1,3 +1,11 @@
+# 2026-10-13 — VR38 frontier expansion
+
+Added three enemy variants with distinct fan, mortar and shield mechanics; visible attack tells and projectile trails; sprint/stamina/dodge; optional VR thumbsticks and snap turning; more procedural environment detail; recurring supply drops; eight persistent medals; and successful extraction after wave 3 with +25% run souls.
+
+Wave events change enemy mix and clear bonuses without changing boss positions or queue size. New Quickstep, Second Wind and Field Medic perks support different runs. Fast projectile collision and armored damage reduction were corrected. Outstanding mortar zones are cleared before the next shopping break.
+
+Verification: static build and 37 regressions pass; new enemy rendering/attacks, sprint/dodge, pause freeze, extraction, Night Siege/Gridlock queues and phone controls pass in real WebGL2. Physical Quest locomotion/MR presentation and headset performance remain pending.
+
 # 2026-10-13 — VR37 playability pass
 
 The previous menu exited the active run, a final queued spawn could complete a wave before being defeated, and four Armory tiers charged souls without unlocking anything. This pass fixes those progression issues and gives screen players a usable mission briefing, pause screen, and live next-step guidance.

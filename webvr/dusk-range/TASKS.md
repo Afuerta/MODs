@@ -2,6 +2,7 @@
 
 | ID | Task | Owner | Status |
 | --- | --- | --- | --- |
+| VR38 | Add enemy variants/attack tells, movement, environment detail, repeatable supplies/career medals and extraction | Codex | Implemented; 37 regression tests and WebGL desktop/mode/mobile checks pass; headset playtest pending |
 | VR37 | Recover current Vercel source, improve mission lobby/pause/controls, correct wave and progression defects | Codex root + gameplay / XR / browser agents | Implemented; automated and browser verification complete; physical Quest playtest pending |
 
 Owned paths for this task: `webvr/dusk-range/` only. No Minecraft, Terraria, shared build, or other agent branches are changed.

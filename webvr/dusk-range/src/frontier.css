@@ -630,3 +630,61 @@ h1 b {
     white-space: nowrap;
   }
 }
+.career-journal {
+  color: #b9a6c3;
+  max-width: 520px;
+  font-size: 0.72rem;
+}
+.career-journal strong {
+  letter-spacing: 0.12em;
+  color: #89d8c5;
+  font-size: 0.62rem;
+}
+.career-journal p {
+  margin: 5px 0 0;
+  line-height: 1.6;
+}
+#mobilityHud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: #85e0cd;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  margin-top: 10px;
+}
+#extractBtn {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  border-color: #77d6b8;
+  color: #8fe7cf;
+  background: #162c27e8;
+  font-size: 0.82rem;
+  z-index: 4;
+}
+#touchControls {
+  max-width: calc(100% - 20px);
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+}
+#touchControls button {
+  min-width: 38px;
+  padding: 11px 9px;
+  font-size: 0.72rem;
+}
+@media (pointer: coarse) {
+  #hud {
+    bottom: 118px;
+  }
+  #extractBtn {
+    bottom: 74px;
+    right: 12px;
+    padding: 8px 10px;
+  }
+}
+
+#extractBtn {
+  pointer-events: auto;
+}

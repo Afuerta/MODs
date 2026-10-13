@@ -100,13 +100,20 @@ function onXRFrame(t, r) {
     clearXRInput();
     return;
   }
-  const s = r.getViewerPose(refSpace);
+  let s = r.getViewerPose(refSpace);
   if (!s) {
     clearXRInput();
     return;
   }
   const n = lastXR ? clamp((t - lastXR) / 1e3, 0, 0.05) : 0.016;
   lastXR = t;
+  if (typeof xrLocomotion === "function" && xrLocomotion(r, s, o, n)) {
+    s = r.getViewerPose(refSpace);
+    if (!s) {
+      clearXRInput();
+      return;
+    }
+  }
   {
     const a = s.transform.matrix,
       e = s.transform.position;

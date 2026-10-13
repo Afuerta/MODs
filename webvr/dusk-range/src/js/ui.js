@@ -16,7 +16,7 @@ const MISSIONS = {
     goal: "Outlast the frontier.",
     detail:
       "Outlaw robots, invaders, and wild things. Clear each wave, then shoot one reward crate to shape your build.",
-    tip: "A boss arrives every fifth wave. Duck or sidestep incoming shots; upgrade your weapons and perks between fights.",
+    tip: "Shift sprints. F dodges. Every 12 eliminations earns a supply drop. Clear wave 3, then shoot the green extraction beacon to bank +25% souls.",
   },
   siege: {
     name: "Night Siege",
@@ -24,7 +24,7 @@ const MISSIONS = {
     goal: "Hold Hollow Creek.",
     detail:
       "The dead are rising. Earn gold, try the Lucky Coffin, and bring souls home to spend at the Armory.",
-    tip: "The trader arrives between waves. Shoot READY when equipped, or watch the countdown. Aim down in VR to reload.",
+    tip: "Mortars mark the ground; drones fire fans. Spend gold between waves, or extract after wave 3 for +25% souls. Aim down in VR to reload.",
   },
   td: {
     name: "Gridlock",
@@ -40,10 +40,13 @@ const PLAY = {
   selected: "range",
   quality: "balanced",
   volume: 0.5,
+  vrMove: "room",
 };
 try {
   const selected = localStorage.getItem("dusk-range-mode");
   if (Object.hasOwn(MISSIONS, selected)) PLAY.selected = selected;
+  const vrMove = localStorage.getItem("dusk-range-vr-move");
+  if (["room", "sticks"].includes(vrMove)) PLAY.vrMove = vrMove;
   const quality = localStorage.getItem("dusk-range-quality");
   if (["performance", "balanced", "crisp"].includes(quality))
     PLAY.quality = quality;
@@ -64,6 +67,27 @@ function screenPixelRatio() {
   return { performance: 1, balanced: 1.5, crisp: 2 }[PLAY.quality];
 }
 function updateMenuStats() {
+  const next = CAREER_MILESTONES.find((m) => !CAREER.medals.includes(m.id));
+  $("careerJournal").textContent =
+    CAREER.medals.length +
+    "/" +
+    CAREER_MILESTONES.length +
+    " medals · " +
+    CAREER.kills +
+    " eliminations · " +
+    CAREER.extractions +
+    " extractions" +
+    (next
+      ? " · Next: " +
+        next.name +
+        " " +
+        Math.min(CAREER[next.stat], next.goal) +
+        "/" +
+        next.goal +
+        " (+" +
+        next.souls +
+        " souls)"
+      : " · Every medal earned");
   $("careerRank").textContent = rankOf(META.total);
   $("careerSouls").textContent = META.souls.toLocaleString();
   $("careerRecord").textContent = S.bestWave
@@ -216,6 +240,15 @@ function updateObjective() {
   const visible = !overlayOpen && !xrSession;
   $("objective").hidden = !visible;
   $("touchControls").hidden = !visible || PLAY.paused;
+  $("extractBtn").hidden = !canExtract() || PLAY.paused;
+  $("staminaOut").textContent =
+    "STAMINA " +
+    Math.round(MOBILITY.stamina) +
+    (EXP.label ? " · " + EXP.label : "");
+  $("dodgeOut").textContent =
+    MOBILITY.dashCd > 0
+      ? "DODGE " + MOBILITY.dashCd.toFixed(1) + "s"
+      : "DODGE READY · F";
   if (!visible) return;
   const { label, detail } = objectiveText();
   const key = label + detail;
@@ -270,7 +303,11 @@ for (const button of document.querySelectorAll("[data-control]")) {
     if (overlayOpen || xrSession || PLAY.paused) return;
     event.preventDefault();
     button.setPointerCapture(event.pointerId);
-    key === "r" ? startReload(flatGun) : keys.add(key);
+    key === "r"
+      ? startReload(flatGun)
+      : key === "f"
+        ? dodgeFlat()
+        : keys.add(key);
   });
   for (const event of ["pointerup", "pointercancel", "lostpointercapture"])
     button.addEventListener(event, () => keys.delete(key));
@@ -280,3 +317,13 @@ document.addEventListener("visibilitychange", () => {
 });
 selectMission(PLAY.selected);
 updateMenuStats();
+
+$("vrMoveIn").value = PLAY.vrMove;
+$("vrMoveIn").addEventListener("change", (event) => {
+  PLAY.vrMove = event.target.value === "sticks" ? "sticks" : "room";
+  rememberSetting("vr-move", PLAY.vrMove);
+});
+$("extractBtn").addEventListener("click", () => {
+  clearScreenInput();
+  extractRun();
+});

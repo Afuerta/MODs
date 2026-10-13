@@ -115,7 +115,15 @@ function drawSignResults() {
     (t.fillStyle = e ? "#3e5a7a" : l ? "#a0307a" : CLAYINK),
     (t.font = `112px ${FD}`),
     t.fillText(
-      e ? "SIEGE OVER" : l ? "CITY FALLEN" : o ? "RUN OVER" : "ROUND OVER",
+      o && R.extracted
+        ? "EXTRACTED"
+        : e
+          ? "SIEGE OVER"
+          : l
+            ? "CITY FALLEN"
+            : o
+              ? "RUN OVER"
+              : "ROUND OVER",
       58,
       150,
       640,
