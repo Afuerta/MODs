@@ -1,0 +1,2906 @@
+"use strict";
+const TABLE = {
+    x: 0,
+    y: 0.9,
+    z: -1.32,
+    k: 0.0125,
+    cx: 0,
+    cz: -33,
+    hw: 0.78,
+    hd: 0.48,
+  },
+  TREG = [-60, -70, 60, 4],
+  toTable = (t, e, o = 0) => [
+    TABLE.x + (t - TABLE.cx) * TABLE.k,
+    TABLE.y + o,
+    TABLE.z + (e - TABLE.cz) * TABLE.k,
+  ],
+  fromTable = (t) => [
+    TABLE.cx + (t[0] - TABLE.x) / TABLE.k,
+    TABLE.cz + (t[2] - TABLE.z) / TABLE.k,
+  ],
+  inTreg = (t, e) => t > TREG[0] && t < TREG[2] && e > TREG[1] && e < TREG[3],
+  CMD_POS = [-1.18, 1.16, -0.94],
+  BLD_POS = [1.18, 1.16, -0.94],
+  CMDP = panel(512, 384, 0.8),
+  BLDP = panel(512, 384, 0.8),
+  TOWERS = {
+    sentry: {
+      name: "SENTRY",
+      desc: "Twin autoguns. Hits air and ground.",
+      cost: 100,
+      up: [90, 170, 260],
+      col: [0.35, 0.95, 1],
+      css: "#5ef0ff",
+      range: [13, 14.5, 16],
+      cd: [0.32, 0.26, 0.2],
+      dmg: [0.55, 0.85, 1.25],
+      air: !0,
+    },
+    tesla: {
+      name: "ARC POLE",
+      desc: "Lightning chains through a crowd.",
+      cost: 175,
+      up: [150, 260, 400],
+      col: [0.78, 0.55, 1],
+      css: "#c08aff",
+      range: [9, 10, 11.5],
+      cd: [1.1, 0.95, 0.8],
+      dmg: [1, 1.5, 2.2],
+      chain: [3, 4, 6],
+      air: !0,
+      fx: "shock",
+    },
+    frost: {
+      name: "CRYO VENT",
+      desc: "Freezing pulse slows all nearby.",
+      cost: 140,
+      up: [120, 210, 320],
+      col: [0.55, 0.9, 1],
+      css: "#8fe6ff",
+      range: [8, 9, 10],
+      cd: [1.4, 1.25, 1.1],
+      dmg: [0.3, 0.5, 0.8],
+      fx: "freeze",
+    },
+    mortar: {
+      name: "MORTAR",
+      desc: "Lobbed shells blast whole packs.",
+      cost: 225,
+      up: [190, 320, 480],
+      col: [1, 0.6, 0.25],
+      css: "#ff9a3a",
+      range: [24, 27, 30],
+      min: 5,
+      cd: [2.6, 2.3, 2],
+      dmg: [2.4, 3.6, 5.4],
+      splash: [2.6, 3, 3.5],
+    },
+    flame: {
+      name: "TORCH",
+      desc: "Hoses the street in fire. Burns.",
+      cost: 160,
+      up: [140, 240, 360],
+      col: [1, 0.45, 0.15],
+      css: "#ff6a2a",
+      range: [6.5, 7.2, 8],
+      cd: [0.12, 0.11, 0.1],
+      dmg: [0.2, 0.3, 0.42],
+      fx: "burn",
+    },
+    rail: {
+      name: "LANCER",
+      desc: "Rail cannon. Pierces a whole line.",
+      cost: 275,
+      up: [230, 380, 560],
+      col: [0.6, 0.92, 1],
+      css: "#9fe8ff",
+      range: [32, 36, 40],
+      cd: [2.7, 2.3, 1.9],
+      dmg: [6, 9, 13],
+      pierce: [3, 4, 6],
+      air: !0,
+    },
+  },
+  TOWER_IDS = Object.keys(TOWERS),
+  TMAX = 4;
+function tv(t, e) {
+  const o = TOWERS[t.type],
+    a = o[e][Math.min(2, t.lvl - 1)];
+  return t.lvl < 4
+    ? a
+    : e === "cd"
+      ? a * 0.8
+      : e === "dmg"
+        ? a * 1.6
+        : e === "range" || e === "splash"
+          ? a * 1.12
+          : e === "chain" || e === "pierce"
+            ? a + 2
+            : a;
+}
+const DRONE_COST = [250, 400, 600],
+  TD = { on: !1 };
+function tdReset() {
+  Object.assign(TD, {
+    on: !1,
+    towers: [],
+    drones: [],
+    shells: [],
+    flames: [],
+    rings: [],
+    strikes: [],
+    drops: [],
+    sel: -1,
+    hover: -1,
+    bhover: -1,
+    chover: -1,
+    core: 20,
+    coreMax: 20,
+    coreHit: 0,
+    t: 0,
+    charge: 0,
+    armed: !1,
+    ready: !1,
+    ko: 0,
+    lost: !1,
+    quiet: !1,
+    dmgMul: 1,
+    rateMul: 1,
+    rangeMul: 1,
+    droneMul: 1,
+    lanes: [0],
+    warned: !1,
+    empTold: !1,
+    padT: [],
+    cmd: null,
+    bld: null,
+    table: null,
+    cmdKey: "",
+    bldKey: "",
+  });
+}
+tdReset();
+const goldMode = () => R.kind === "siege" || R.kind === "td",
+  towerAt = (t) => TD.towers.find((e) => e.pad === t) || null,
+  TWM = {};
+(() => {
+  const t = mulberry(4242),
+    e = C.white1,
+    o = (n, s) => {
+      (cyl(n, 0, 0, 0, 1.3, 1.15, 0.36, 8, C.uConcDk, C.uConc),
+        cyl(s, 0, 0.15, 0, 1.33, 1.33, 0.06, 8, e));
+    },
+    a = (n, s, l, r, c, d, p) =>
+      n.add(
+        ring(new Geo(), c, d, p, e),
+        trs(m4(), s, l, r, 0, -Math.PI / 2, 0, 1, 1, 1),
+      );
+  {
+    const n = new Geo(),
+      s = new Geo(),
+      l = new Geo(),
+      r = new Geo();
+    (o(n, s),
+      cyl(n, 0, 0.36, 0, 0.3, 0.24, 1.3, 8, C.uMetal, C.uMetal),
+      cyl(n, 0, 1.6, 0, 0.42, 0.42, 0.12, 8, C.uConcDk, C.uConcDk),
+      box(l, 0, 0, 0, 0.82, 0.5, 0.74, C.uConcDk),
+      box(l, 0, 0.27, -0.06, 0.6, 0.06, 0.5, C.uMetal));
+    for (const c of [-1, 1])
+      (box(l, c * 0.2, -0.04, 0.68, 0.1, 0.1, 0.62, C.uDark),
+        box(l, c * 0.2, -0.04, 1, 0.15, 0.15, 0.08, C.uMetal),
+        box(l, c * 0.48, -0.05, 0, 0.16, 0.34, 0.5, C.uMetal));
+    (box(r, 0, 0.1, 0.375, 0.52, 0.07, 0.02, e),
+      (TWM.sentry = {
+        base: n.mesh(),
+        glow: s.mesh(),
+        head: l.mesh(),
+        hglow: r.mesh(),
+        hy: 1.95,
+        muzzle: [
+          [-0.2, -0.04, 1.06],
+          [0.2, -0.04, 1.06],
+        ],
+      }));
+  }
+  {
+    const n = new Geo(),
+      s = new Geo();
+    (o(n, s),
+      lathe(
+        n,
+        [
+          [0.34, 0.36],
+          [0.26, 1.4],
+          [0.18, 2.6],
+          [0.12, 3],
+        ],
+        8,
+        C.uMetal,
+        !1,
+      ));
+    for (const l of [1.2, 1.7, 2.2])
+      (cyl(n, 0, l, 0, 0.44, 0.44, 0.06, 10, C.uConcDk, C.uConcDk),
+        cyl(s, 0, l + 0.1, 0, 0.36, 0.3, 0.08, 10, e));
+    (ico(s, 0, 3.3, 0, 0.36, 0.36, 0.36, e, t, 0.12, 0),
+      (TWM.tesla = { base: n.mesh(), glow: s.mesh(), head: null, hy: 3.3 }));
+  }
+  {
+    const n = new Geo(),
+      s = new Geo(),
+      l = new Geo();
+    (o(n, s),
+      cyl(n, 0, 0.36, 0, 0.9, 0.82, 0.95, 10, C.uMetal, C.uConcDk),
+      cyl(n, 0, 1.31, 0, 0.82, 0.7, 0.1, 10, C.uConcDk, C.uDark));
+    for (let r = 0; r < 8; r++) {
+      const c = (r / 8) * TAU;
+      box(s, Math.sin(c) * 0.87, 0.85, Math.cos(c) * 0.87, 0.1, 0.6, 0.1, e);
+    }
+    cyl(s, 0, 1.33, 0, 0.62, 0.62, 0.02, 12, e, e);
+    for (let r = 0; r < 3; r++)
+      l.add(
+        box(new Geo(), 0, 0, 0.33, 0.18, 0.03, 0.62, C.uMetal),
+        trs(m4(), 0, 0, 0, (r * TAU) / 3, 0, 0.35, 1, 1, 1),
+      );
+    (cyl(l, 0, -0.04, 0, 0.12, 0.12, 0.1, 8, C.uDark, C.uDark),
+      (TWM.frost = {
+        base: n.mesh(),
+        glow: s.mesh(),
+        head: l.mesh(),
+        hy: 1.44,
+        spin: !0,
+        noPitch: !0,
+      }));
+  }
+  {
+    const n = new Geo(),
+      s = new Geo(),
+      l = new Geo(),
+      r = new Geo();
+    (o(n, s),
+      cyl(n, 0, 0.36, 0, 0.9, 0.9, 0.2, 10, C.uMetal, C.uMetal),
+      box(l, 0, 0.12, 0, 1.1, 0.5, 1, C.uConcDk));
+    for (const d of [-1, 1])
+      box(l, d * 0.42, 0.45, 0.1, 0.12, 0.5, 0.5, C.uMetal);
+    const c = trs(m4(), 0, 0.3, -0.1, 0, 0.75, 0, 1, 1, 1);
+    (l.add(cyl(new Geo(), 0, 0, 0, 0.25, 0.22, 1.4, 10, C.uDark, C.uDark), c),
+      r.add(cyl(new Geo(), 0, 1.22, 0, 0.26, 0.26, 0.07, 10, e), c),
+      (TWM.mortar = {
+        base: n.mesh(),
+        glow: s.mesh(),
+        head: l.mesh(),
+        hglow: r.mesh(),
+        hy: 0.66,
+        noPitch: !0,
+        muzzle: [0, 1.32, 0.86],
+      }));
+  }
+  {
+    const n = new Geo(),
+      s = new Geo(),
+      l = new Geo(),
+      r = new Geo(),
+      c = hex("#b8322c");
+    (o(n, s),
+      cyl(n, 0, 0.36, 0, 0.42, 0.4, 1, 10, c, c),
+      cyl(n, 0, 1.36, 0, 0.42, 0.12, 0.32, 10, hex("#c83a30"), hex("#c83a30")),
+      cyl(n, 0, 1.28, 0, 0.47, 0.47, 0.08, 10, C.uMetal, C.uMetal));
+    for (const d of [-1, 1]) box(n, d * 0.5, 0.95, 0, 0.18, 0.2, 0.2, C.uMetal);
+    (l.add(
+      cyl(new Geo(), 0, 0, 0, 0.17, 0.24, 0.62, 8, C.uMetal, C.uDark),
+      trs(m4(), 0, 0, 0.32, 0, Math.PI / 2, 0, 1, 1, 1),
+    ),
+      box(r, 0, 0.17, 0.85, 0.08, 0.08, 0.08, e),
+      (TWM.flame = {
+        base: n.mesh(),
+        glow: s.mesh(),
+        head: l.mesh(),
+        hglow: r.mesh(),
+        hy: 1,
+        noPitch: !0,
+        muzzle: [0, 0, 1],
+      }));
+  }
+  {
+    const n = new Geo(),
+      s = new Geo(),
+      l = new Geo(),
+      r = new Geo();
+    o(n, s);
+    for (let c = 0; c < 3; c++) {
+      const d = (c / 3) * TAU;
+      strut(
+        n,
+        [Math.cos(d) * 0.8, 0.36, Math.sin(d) * 0.8],
+        [0, 1.6, 0],
+        0.13,
+        C.uMetal,
+      );
+    }
+    (cyl(n, 0, 1.5, 0, 0.3, 0.3, 0.2, 8, C.uConcDk, C.uConcDk),
+      box(l, 0, 0, 0.7, 0.24, 0.26, 2.6, C.uConcDk));
+    for (const c of [-1, 1]) box(l, c * 0.17, 0, 0.9, 0.06, 0.34, 2, C.uMetal);
+    (box(l, 0, 0.24, 0.2, 0.12, 0.12, 0.6, C.uDark),
+      box(l, 0, -0.05, -0.75, 0.42, 0.42, 0.5, C.uMetal));
+    for (const c of [0.2, 0.7, 1.2, 1.7]) box(r, 0, 0, c, 0.3, 0.32, 0.06, e);
+    TWM.rail = {
+      base: n.mesh(),
+      glow: s.mesh(),
+      head: l.mesh(),
+      hglow: r.mesh(),
+      hy: 1.8,
+      muzzle: [0, 0, 2.05],
+    };
+  }
+  {
+    const n = new Geo(),
+      s = new Geo();
+    for (const [r, c] of CITY.pads)
+      (cyl(n, r, 0, c, 1.75, 1.65, 0.07, 6, C.uConcDk, C.uConc),
+        a(s, r, 0.078, c, 1.42, 1.58, 6));
+    ((EM.tdPads = n.mesh()), (EM.tdPadsGlow = s.mesh()));
+    const l = new Geo();
+    (a(l, 0, 0, 0, 1.42, 1.62, 6), (EM.tdPadRing = l.mesh()));
+  }
+  {
+    const n = new Geo(),
+      s = new Geo(),
+      [l, r] = CITY.core;
+    (cyl(n, l, 0, r, 2.6, 2.45, 0.3, 6, C.uConcDk, C.uConc),
+      cyl(n, l, 0.3, r, 1.7, 1.55, 0.25, 6, C.uMetal, C.uConcDk),
+      cyl(n, l, 0.55, r, 0.55, 0.22, 0.35, 8, C.uConcDk, C.uMetal));
+    for (let c = 0; c < 6; c++) {
+      const d = ((c + 0.5) / 6) * TAU,
+        p = l + Math.sin(d) * 2.15,
+        h = r + Math.cos(d) * 2.15;
+      (cyl(n, p, 0.3, h, 0.14, 0.11, 0.6, 6, C.uConcDk, C.uMetal),
+        box(s, p, 0.95, h, 0.12, 0.08, 0.12, e));
+    }
+    (a(s, l, 0.31, r, 2.45, 2.6, 6),
+      a(s, l, 0.56, r, 1, 1.15, 24),
+      cyl(s, l, 0.86, r, 0.24, 0.24, 0.05, 10, e),
+      (EM.tdCore = n.mesh()),
+      (EM.tdCoreGlow = s.mesh()),
+      (EM.tdCrystal = octa(new Geo(), 1, e).mesh()),
+      (EM.tdRing = ring(new Geo(), 1.12, 1.24, 40, e).mesh()));
+  }
+  {
+    const n = new Geo(),
+      s = new Geo();
+    (box(n, 0, 0, 0, 0.14, 0.05, 0.16, C.uDark),
+      box(n, 0, 0.035, -0.01, 0.08, 0.03, 0.09, C.uMetal),
+      box(n, 0, -0.035, 0.07, 0.03, 0.03, 0.06, C.uDark));
+    for (const [l, r] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ])
+      (strut(n, [0, 0, 0], [l * 0.12, 0.012, r * 0.12], 0.016, C.uMetal),
+        cyl(
+          n,
+          l * 0.12,
+          0.02,
+          r * 0.12,
+          0.062,
+          0.062,
+          0.006,
+          10,
+          C.uConcDk,
+          C.uConcDk,
+        ));
+    box(s, 0, 0, 0.081, 0.09, 0.018, 0.006, e);
+    for (const [l, r] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ])
+      box(s, l * 0.12, 0.028, r * 0.12, 0.02, 0.006, 0.02, e);
+    ((EM.tdDrone = n.mesh()), (EM.tdDroneGlow = s.mesh()));
+  }
+})();
+const TBL = {};
+(() => {
+  const t = new Geo(),
+    e = new Geo(),
+    o = new Geo(),
+    { x: a, y: n, z: s, hw: l, hd: r, k: c } = TABLE,
+    d = (i, f, u = 0) => toTable(i, f, u),
+    p = (i) => {
+      const f = [
+        Math.max(i[0], TREG[0]),
+        Math.max(i[1], TREG[1]),
+        Math.min(i[2], TREG[2]),
+        Math.min(i[3], TREG[3]),
+      ];
+      return f[0] < f[2] && f[1] < f[3] ? f : null;
+    },
+    h = (i, f, u, m) => {
+      const g = d(f[0], f[1], u),
+        w = d(f[2], f[3], u);
+      i.quad(
+        [g[0], g[1], w[2]],
+        [w[0], g[1], w[2]],
+        [w[0], g[1], g[2]],
+        [g[0], g[1], g[2]],
+        m,
+      );
+    };
+  (box(t, a, n - 0.035, s, (l + 0.06) * 2, 0.07, (r + 0.06) * 2, C.uDark),
+    box(t, a, n - 0.11, s, l * 2 - 0.04, 0.08, r * 2 - 0.04, C.uConcDk));
+  for (const [i, f] of [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+  ])
+    box(
+      t,
+      a + i * (l - 0.06),
+      (n - 0.15) / 2,
+      s + f * (r - 0.06),
+      0.07,
+      n - 0.15,
+      0.07,
+      C.uMetal,
+    );
+  for (const i of [-1, 1])
+    (box(
+      o,
+      a,
+      n + 0.002,
+      s + i * (r + 0.045),
+      l * 2 + 0.1,
+      0.008,
+      0.012,
+      C.uCyan,
+    ),
+      box(
+        o,
+        a + i * (l + 0.045),
+        n + 0.002,
+        s,
+        0.012,
+        0.008,
+        r * 2 + 0.1,
+        C.uCyan,
+      ));
+  h(
+    e,
+    [TREG[0] - 1.5, TREG[1] - 1.5, TREG[2] + 1.5, TREG[3] + 1.5],
+    5e-4,
+    hex("#0c1122"),
+  );
+  for (let i = -60; i <= 60; i += 10) {
+    const f = d(i, TREG[1], 8e-4),
+      u = d(i, TREG[3], 8e-4);
+    o.quad(
+      [f[0] - 7e-4, f[1], u[2]],
+      [f[0] + 7e-4, f[1], u[2]],
+      [f[0] + 7e-4, f[1], f[2]],
+      [f[0] - 7e-4, f[1], f[2]],
+      hex("#16243c"),
+    );
+  }
+  for (let i = -70; i <= 4; i += 10) {
+    const f = d(TREG[0], i, 8e-4),
+      u = d(TREG[2], i, 8e-4);
+    o.quad(
+      [f[0], f[1], f[2] + 7e-4],
+      [u[0], f[1], f[2] + 7e-4],
+      [u[0], f[1], f[2] - 7e-4],
+      [f[0], f[1], f[2] - 7e-4],
+      hex("#16243c"),
+    );
+  }
+  for (const i of CITY.roads) {
+    const f = p(roadRect(i));
+    f && h(e, f, 0.0012, hex("#2c3656"));
+  }
+  {
+    const i = p(CITY.plaza);
+    h(e, i, 0.0018, hex("#3a3e66"));
+  }
+  for (const i of CITY.parks) h(e, i, 0.0018, hex("#1c4a3a"));
+  for (const i of CITY.bld) {
+    const f = p(i.r);
+    if (!f || (f[2] - f[0]) * (f[3] - f[1]) < 2) continue;
+    const u = Math.min(0.05, 0.006 + i.h * 8e-4),
+      m = d(f[0], f[1]),
+      g = d(f[2], f[3]);
+    box(
+      e,
+      (m[0] + g[0]) / 2,
+      n + u / 2,
+      (m[2] + g[2]) / 2,
+      g[0] - m[0],
+      u,
+      g[2] - m[2],
+      mix3(hex("#262848"), hex("#4c4a80"), Math.min(1, i.h / 40)),
+    );
+  }
+  for (const i of CITY.lanes)
+    for (let f = 1; f < i.pts.length; f++) {
+      const u = i.pts[f - 1],
+        m = i.pts[f],
+        g = Math.hypot(m[0] - u[0], m[1] - u[1]),
+        w = (-(m[1] - u[1]) / g) * 0.75,
+        M = ((m[0] - u[0]) / g) * 0.75,
+        x = (b, T) => d(b, T, 0.0026);
+      o.quad(
+        x(u[0] + w, u[1] + M),
+        x(m[0] + w, m[1] + M),
+        x(m[0] - w, m[1] - M),
+        x(u[0] - w, u[1] - M),
+        hex("#a8321e"),
+      );
+    }
+  for (const i of CITY.lanes) {
+    const f = i.pts[0],
+      u = d(f[0], f[1], 0.003);
+    o.add(
+      ring(new Geo(), 0, 2.4 * c, 16, hex("#a040ff")),
+      trs(m4(), u[0], u[1], u[2], 0, -Math.PI / 2, 0, 1, 1, 1),
+    );
+  }
+  for (const [i, f] of CITY.pads) {
+    const u = d(i, f, 0.0032);
+    o.add(
+      ring(new Geo(), 1.25 * c, 1.7 * c, 6, hex("#2a8aa0")),
+      trs(m4(), u[0], u[1], u[2], 0, -Math.PI / 2, 0, 1, 1, 1),
+    );
+  }
+  {
+    const i = d(CITY.core[0], CITY.core[1]);
+    cyl(
+      o,
+      i[0],
+      n,
+      i[2],
+      2.6 * c,
+      2.2 * c,
+      0.012,
+      6,
+      hex("#36e8ff"),
+      hex("#bff6ff"),
+    );
+  }
+  {
+    const i = d(0, 0, 0.004);
+    o.tri(
+      [i[0], i[1], i[2] - 0.022],
+      [i[0] - 0.013, i[1], i[2] + 0.012],
+      [i[0] + 0.013, i[1], i[2] + 0.012],
+      C.uAmber,
+    );
+  }
+  ((TBL.body = t.mesh()), (TBL.mini = e.mesh()), (TBL.glow = o.mesh()));
+})();
+function rrect(t, e, o, a, n, s) {
+  (t.beginPath(),
+    t.roundRect ? t.roundRect(e, o, a, n, s) : t.rect(e, o, a, n));
+}
+function panelBtn(t, e, o, a, n, s, l, r) {
+  (rrect(t, 16, e, 480, o, 12),
+    (t.fillStyle = l ? (r ? s : s + "cc") : "#221c36"),
+    t.fill(),
+    (t.lineWidth = r ? 5 : 3),
+    (t.strokeStyle = l ? (r ? "#ffffff" : s) : "#3a3254"),
+    t.stroke(),
+    (t.textBaseline = "middle"),
+    (t.textAlign = "left"),
+    spaced(t, 0),
+    (t.font = `38px ${FD}`),
+    (t.fillStyle = l ? "#120e20" : "#6a5a88"),
+    t.fillText(a, 34, e + o / 2 + 2, 300),
+    (t.textAlign = "right"),
+    (t.font = `700 22px ${FB}`),
+    t.fillText(n, 478, e + o / 2 + 1, 170));
+}
+function towerIcon(t, e, o, a, n, s) {
+  if (
+    (t.save(),
+    t.translate(o, a),
+    (t.strokeStyle = s),
+    (t.fillStyle = s),
+    (t.lineWidth = n * 0.12),
+    (t.lineCap = "round"),
+    (t.lineJoin = "round"),
+    t.beginPath(),
+    e === "sentry")
+  )
+    (t.rect(-n * 0.45, -n * 0.2, n * 0.6, n * 0.45),
+      t.moveTo(n * 0.15, -n * 0.08),
+      t.lineTo(n * 0.55, -n * 0.08),
+      t.moveTo(n * 0.15, n * 0.12),
+      t.lineTo(n * 0.55, n * 0.12),
+      t.moveTo(-n * 0.15, n * 0.25),
+      t.lineTo(-n * 0.15, n * 0.55),
+      t.stroke());
+  else if (e === "tesla")
+    (t.moveTo(n * 0.1, -n * 0.55),
+      t.lineTo(-n * 0.25, n * 0.02),
+      t.lineTo(n * 0.08, n * 0.02),
+      t.lineTo(-n * 0.12, n * 0.55),
+      t.stroke());
+  else if (e === "frost") {
+    for (let l = 0; l < 3; l++) {
+      const r = (l * Math.PI) / 3;
+      (t.moveTo(Math.cos(r) * n * 0.5, Math.sin(r) * n * 0.5),
+        t.lineTo(-Math.cos(r) * n * 0.5, -Math.sin(r) * n * 0.5));
+    }
+    t.stroke();
+  } else
+    e === "mortar"
+      ? (t.arc(0, n * 0.25, n * 0.3, Math.PI, 0),
+        t.moveTo(-n * 0.05, n * 0.05),
+        t.lineTo(n * 0.35, -n * 0.45),
+        t.stroke(),
+        t.beginPath(),
+        t.arc(n * 0.42, -n * 0.55, n * 0.08, 0, TAU),
+        t.fill())
+      : e === "flame"
+        ? (t.moveTo(0, -n * 0.55),
+          t.quadraticCurveTo(n * 0.45, -n * 0.05, n * 0.2, n * 0.45),
+          t.quadraticCurveTo(0, n * 0.55, -n * 0.2, n * 0.45),
+          t.quadraticCurveTo(-n * 0.45, -n * 0.05, 0, -n * 0.55),
+          t.fill())
+        : e === "rail" &&
+          (t.moveTo(-n * 0.55, n * 0.2),
+          t.lineTo(n * 0.55, -n * 0.2),
+          t.stroke(),
+          t.beginPath(),
+          t.arc(-n * 0.1, n * 0.04, n * 0.2, 0, TAU),
+          t.stroke());
+  t.restore();
+}
+const earlyBonus = () =>
+    R.phase === "build" ? Math.max(0, Math.ceil(TD.t)) * 3 : 40 + R.wave * 5,
+  canCall = () =>
+    R.phase === "build" || (R.phase === "fight" && !R.queue.length);
+function paintCmd() {
+  const t = liveEnemies() + R.queue.length,
+    e = [
+      R.gold,
+      R.wave,
+      TD.core,
+      R.phase,
+      Math.ceil(TD.t),
+      canCall(),
+      t,
+      TD.drones.length,
+      Math.floor(TD.charge * 25),
+      TD.armed,
+      TD.chover,
+      TD.ko > 0,
+    ].join("|");
+  if (e === TD.cmdKey) return;
+  TD.cmdKey = e;
+  const o = CMDP.ctx,
+    a = 512,
+    n = 384;
+  ((o.fillStyle = "#100c1e"),
+    o.fillRect(0, 0, a, n),
+    (o.strokeStyle = "#36e8ff"),
+    (o.lineWidth = 6),
+    o.strokeRect(4, 4, a - 8, n - 8),
+    (o.textBaseline = "alphabetic"),
+    spaced(o, 0),
+    (o.textAlign = "left"),
+    (o.font = `40px ${FD}`),
+    (o.fillStyle = "#bff6ff"),
+    o.fillText("COMMAND", 22, 50),
+    (o.textAlign = "right"),
+    (o.fillStyle = "#ffc2e6"),
+    o.fillText(R.wave ? "WAVE " + R.wave : "READY", a - 22, 50),
+    (o.textAlign = "left"),
+    (o.font = `54px ${FD}`),
+    (o.fillStyle = "#ffd257"),
+    o.fillText("$" + R.gold.toLocaleString(), 22, 112, 220));
+  const s = TD.core / TD.coreMax;
+  ((o.fillStyle = "#2a2440"),
+    o.fillRect(250, 74, 240, 24),
+    (o.fillStyle = s > 0.5 ? "#36e8ff" : s > 0.25 ? "#ffb43a" : "#ff4040"),
+    o.fillRect(250, 74, 240 * s, 24),
+    spaced(o, 3),
+    (o.font = `700 19px ${FB}`),
+    (o.fillStyle = "#b9a6d3"),
+    o.fillText("BEACON " + TD.core + " / " + TD.coreMax, 250, 122, 240),
+    (o.textAlign = "right"),
+    o.fillText(
+      TD.ko > 0 ? "YOU ARE DOWN" : t ? t + " HOSTILE" : "ALL CLEAR",
+      a - 22,
+      144,
+      240,
+    ),
+    spaced(o, 0));
+  const l = canCall(),
+    r = TD.drones.length;
+  (panelBtn(
+    o,
+    156,
+    70,
+    R.phase === "build"
+      ? "START WAVE " + (R.wave + 1)
+      : l
+        ? "CALL WAVE " + (R.wave + 1)
+        : "WAVE " + R.wave + " INBOUND",
+    l
+      ? (R.phase === "build" ? Math.ceil(TD.t) + "s · +$" : "early +$") +
+          earlyBonus()
+      : "hold the line",
+    "#7fe0a0",
+    l,
+    TD.chover === 0,
+  ),
+    panelBtn(
+      o,
+      234,
+      64,
+      "WINGMAN DRONE",
+      r < 3 ? "$" + DRONE_COST[r] + "  ·  " + r + "/3" : "MAX 3/3",
+      "#ff7ad8",
+      r < 3 && R.gold >= DRONE_COST[r],
+      TD.chover === 1,
+    ));
+  const c = TD.charge >= 1;
+  (panelBtn(
+    o,
+    306,
+    64,
+    TD.armed ? "TARGET IT" : "AIRSTRIKE",
+    TD.armed
+      ? "shoot map or street"
+      : c
+        ? "READY"
+        : Math.floor(TD.charge * 100) + "%",
+    "#ffb43a",
+    c,
+    TD.chover === 2,
+  ),
+    c ||
+      ((o.fillStyle = "#3a2a18"),
+      o.fillRect(250, 360, 228, 6),
+      (o.fillStyle = "#ffb43a"),
+      o.fillRect(250, 360, 228 * TD.charge, 6)),
+    upload(CMDP.tex, CMDP.cvs));
+}
+const BCELL = (t) => [
+  10 + (t % 3) * 164,
+  78 + Math.floor(t / 3) * 150,
+  160,
+  144,
+];
+function paintBuild() {
+  const t = TD.sel >= 0 ? towerAt(TD.sel) : null,
+    e = [
+      TD.sel,
+      t ? t.type + t.lvl + t.mode + t.kills : "",
+      R.gold,
+      TD.bhover,
+    ].join("|");
+  if (e === TD.bldKey) return;
+  TD.bldKey = e;
+  const o = BLDP.ctx,
+    a = 512,
+    n = 384;
+  if (
+    ((o.fillStyle = "#100c1e"),
+    o.fillRect(0, 0, a, n),
+    (o.strokeStyle = "#ff3aa8"),
+    (o.lineWidth = 6),
+    o.strokeRect(4, 4, a - 8, n - 8),
+    (o.textBaseline = "alphabetic"),
+    spaced(o, 0),
+    (o.textAlign = "left"),
+    (o.font = `40px ${FD}`),
+    (o.fillStyle = "#ffc2e6"),
+    !t)
+  )
+    (o.fillText(
+      TD.sel >= 0 ? "BUILD ON PAD " + (TD.sel + 1) : "TOWERS",
+      22,
+      50,
+      300,
+    ),
+      spaced(o, 2),
+      (o.textAlign = "right"),
+      (o.font = `700 18px ${FB}`),
+      (o.fillStyle = "#b9a6d3"),
+      o.fillText(
+        TD.sel >= 0 ? "SHOOT ONE TO BUILD" : "SHOOT A PAD ON THE TABLE",
+        a - 22,
+        46,
+        250,
+      ),
+      spaced(o, 0),
+      TOWER_IDS.forEach((s, l) => {
+        const r = TOWERS[s],
+          [c, d, p, h] = BCELL(l),
+          i = TD.sel >= 0 && R.gold >= r.cost,
+          f = TD.bhover === l && TD.sel >= 0;
+        (rrect(o, c, d, p, h, 10),
+          (o.fillStyle = f ? "#2e2450" : "#1a1530"),
+          o.fill(),
+          (o.lineWidth = f ? 4 : 2),
+          (o.strokeStyle = TD.sel >= 0 ? (i ? r.css : "#5a3a4a") : "#2e2848"),
+          o.stroke(),
+          towerIcon(o, s, c + 34, d + 38, 40, TD.sel >= 0 ? r.css : "#4a4266"),
+          (o.textAlign = "left"),
+          (o.font = `30px ${FD}`),
+          (o.fillStyle = TD.sel >= 0 ? "#f3e3c8" : "#6a5a88"),
+          o.fillText(r.name, c + 62, d + 46, p - 68),
+          (o.font = `600 15px ${FB}`),
+          (o.fillStyle = "#9a8ab8"));
+        const u = r.desc.split(" ");
+        let m = "",
+          g = d + 80;
+        for (const w of u) {
+          const M = m ? m + " " + w : w;
+          o.measureText(M).width > p - 20
+            ? (o.fillText(m, c + 10, g), (m = w), (g += 18))
+            : (m = M);
+        }
+        (m && o.fillText(m, c + 10, g),
+          (o.font = `32px ${FD}`),
+          (o.fillStyle = i ? "#ffd257" : TD.sel >= 0 ? "#ff7a6a" : "#5a4a70"),
+          o.fillText("$" + r.cost, c + 10, d + h - 12),
+          (o.textAlign = "right"),
+          (o.font = `700 14px ${FB}`),
+          (o.fillStyle = "#7a6a98"),
+          o.fillText(r.air ? "AIR+GROUND" : "GROUND", c + p - 10, d + h - 16));
+      }));
+  else {
+    const s = TOWERS[t.type],
+      l = t.lvl - 1;
+    (towerIcon(o, t.type, 44, 38, 42, s.css),
+      (o.fillStyle = s.css),
+      o.fillText(s.name, 78, 50, 260),
+      (o.textAlign = "right"),
+      (o.fillStyle = "#ffd257"),
+      (o.font = `34px ${FD}`),
+      o.fillText(t.lvl >= TMAX ? "OVERDRIVE" : "LV " + t.lvl, a - 22, 48, 190),
+      spaced(o, 2),
+      (o.textAlign = "left"),
+      (o.font = `700 18px ${FB}`),
+      (o.fillStyle = "#b9a6d3"));
+    const r = tv(t, "dmg") / tv(t, "cd");
+    (o.fillText(
+      "RANGE " +
+        Math.round(tv(t, "range")) +
+        " M  ·  DPS " +
+        r.toFixed(1) +
+        (s.chain
+          ? "  ·  CHAIN " + tv(t, "chain")
+          : s.pierce
+            ? "  ·  PIERCE " + tv(t, "pierce")
+            : "") +
+        "  ·  KILLS " +
+        t.kills,
+      22,
+      92,
+      a - 44,
+    ),
+      spaced(o, 0));
+    const c = t.lvl < TMAX ? s.up[l] : 0;
+    (panelBtn(
+      o,
+      112,
+      78,
+      t.lvl < TMAX - 1 ? "UPGRADE" : t.lvl < TMAX ? "OVERDRIVE" : "MAXED",
+      t.lvl < TMAX ? "$" + c : "",
+      t.lvl === TMAX - 1 ? "#ffb43a" : "#7fe0a0",
+      t.lvl < TMAX && R.gold >= c,
+      TD.bhover === 10,
+    ),
+      panelBtn(
+        o,
+        204,
+        74,
+        "SELL",
+        "+$" + Math.round(t.spent * 0.7),
+        "#ff8a6a",
+        !0,
+        TD.bhover === 11,
+      ),
+      panelBtn(
+        o,
+        292,
+        74,
+        "TARGET",
+        t.mode.toUpperCase(),
+        "#8fdcff",
+        !0,
+        TD.bhover === 12,
+      ));
+  }
+  upload(BLDP.tex, BLDP.cvs);
+}
+function panelPx(t, e, o) {
+  const a = Math.cos(t.yaw),
+    n = -Math.sin(t.yaw),
+    s = (o[0] - t.x) * a + (o[2] - t.z) * n,
+    l = o[1] - t.y;
+  return [(s / e.w + 0.5) * e.cvs.width, (0.5 - l / e.h) * e.cvs.height];
+}
+const cmdRow = ([, t]) =>
+  t >= 150 && t < 230
+    ? 0
+    : t >= 230 && t < 302
+      ? 1
+      : t >= 302 && t < 376
+        ? 2
+        : -1;
+function buildCell([t, e]) {
+  if (TD.sel >= 0 && towerAt(TD.sel))
+    return e >= 108 && e < 196
+      ? 10
+      : e >= 196 && e < 284
+        ? 11
+        : e >= 284 && e < 372
+          ? 12
+          : -1;
+  for (let o = 0; o < 6; o++) {
+    const [a, n, s, l] = BCELL(o);
+    if (t >= a && t < a + s && e >= n && e < n + l) return o;
+  }
+  return -1;
+}
+function tdTargetHit(t, e, o) {
+  if (!(!inRun() || R.kind !== "td"))
+    if (
+      (flashes.push({
+        p: e.point.slice(),
+        t: 0,
+        s: t.kind === "tdpad" ? 1.4 : 0.22,
+        c: [0.5, 0.9, 1],
+      }),
+      t.kind === "table")
+    ) {
+      const [a, n] = fromTable(e.point);
+      tdSelectAt(a, n);
+    } else
+      t.kind === "tdpad"
+        ? tdSelect(t.pad, !0)
+        : t.kind === "tdcmd"
+          ? tdCommand(cmdRow(panelPx(t, CMDP, e.point)))
+          : t.kind === "tdbuild" &&
+            tdBuildPanel(buildCell(panelPx(t, BLDP, e.point)));
+}
+function nearestPad(t, e, o) {
+  let a = -1,
+    n = o;
+  return (
+    CITY.pads.forEach((s, l) => {
+      const r = Math.hypot(s[0] - t, s[1] - e);
+      r < n && ((n = r), (a = l));
+    }),
+    a
+  );
+}
+function tdSelectAt(t, e) {
+  const o = nearestPad(t, e, 4.5);
+  o >= 0 ? tdSelect(o) : ((TD.sel = -1), sfx.tdClick());
+}
+function tdSelect(t, e) {
+  ((TD.sel = TD.sel === t && !e ? -1 : t), sfx.tdSelect());
+}
+function tdCommand(t) {
+  if (t === 0) canCall() ? tdNextWave(!0) : sfx.deny();
+  else if (t === 1) {
+    const e = TD.drones.length;
+    if (e >= 3) {
+      sfx.deny();
+      return;
+    }
+    if (R.gold < DRONE_COST[e]) {
+      (sfx.deny(),
+        popup(
+          "NEED $" + DRONE_COST[e],
+          "#ff7a6a",
+          [CMD_POS[0], CMD_POS[1] + 0.45, CMD_POS[2]],
+          0.5,
+        ));
+      return;
+    }
+    ((R.gold -= DRONE_COST[e]),
+      TD.drones.push({
+        p: [CMD_POS[0], CMD_POS[1], CMD_POS[2]],
+        cd: 0.6,
+        retarget: 0,
+        target: null,
+        yaw: 0,
+        ph: Math.random() * TAU,
+      }),
+      sfx.tdUpgrade(),
+      popup(
+        "DRONE ONLINE",
+        "#ff9ae0",
+        [CMD_POS[0], CMD_POS[1] + 0.45, CMD_POS[2]],
+        0.5,
+      ),
+      e === 0 &&
+        showBanner(
+          "WINGMAN DRONE",
+          "It orbits you and fires at whatever gets close",
+        ));
+  } else
+    t === 2 &&
+      (TD.armed
+        ? ((TD.armed = !1), sfx.tdClick())
+        : TD.charge >= 1
+          ? ((TD.armed = !0),
+            sfx.tdReady(),
+            showBanner(
+              "AIRSTRIKE ARMED",
+              "Shoot the map or the street to mark the target",
+            ))
+          : sfx.deny());
+}
+function tdBuildPanel(t) {
+  if (TD.sel < 0 || t < 0) {
+    sfx.tdClick();
+    return;
+  }
+  const e = towerAt(TD.sel);
+  !e && t < 6
+    ? tdBuild(TOWER_IDS[t])
+    : e && t === 10
+      ? tdUpgrade(e)
+      : e && t === 11
+        ? tdSell(e)
+        : e &&
+          t === 12 &&
+          ((e.mode =
+            e.mode === "first"
+              ? "strong"
+              : e.mode === "strong"
+                ? "close"
+                : "first"),
+          sfx.tdClick());
+}
+function tdBuild(t) {
+  const e = TD.sel;
+  if (e < 0 || towerAt(e)) return;
+  const o = TOWERS[t];
+  if (R.gold < o.cost) {
+    (sfx.deny(),
+      popup(
+        "NEED $" + o.cost,
+        "#ff7a6a",
+        [BLD_POS[0], BLD_POS[1] + 0.45, BLD_POS[2]],
+        0.5,
+      ));
+    return;
+  }
+  R.gold -= o.cost;
+  const [a, n] = CITY.pads[e];
+  (TD.towers.push({
+    pad: e,
+    x: a,
+    z: n,
+    type: t,
+    lvl: 1,
+    cd: 0.8,
+    yaw: Math.atan2(CITY.core[0] - a, CITY.core[1] - n) + Math.PI,
+    pitch: 0,
+    spent: o.cost,
+    drop: 0,
+    emp: 0,
+    kills: 0,
+    mode: t === "rail" ? "strong" : "first",
+    flash: 0,
+    barrel: 0,
+    spin: 0,
+    sc: 1,
+    y0: 30,
+    target: null,
+    retarget: 0,
+  }),
+    (R.stat.towers = (R.stat.towers || 0) + 1),
+    sfx.tdBuild(),
+    popup(o.name, o.css, [BLD_POS[0], BLD_POS[1] + 0.45, BLD_POS[2]], 0.5),
+    R.stat.towers === 1 &&
+      R.wave === 0 &&
+      showBanner(
+        "TOWER INBOUND",
+        "Build more, then shoot START WAVE on the left panel",
+      ));
+}
+function tdUpgrade(t) {
+  const e = TOWERS[t.type];
+  if (t.lvl >= TMAX) {
+    sfx.deny();
+    return;
+  }
+  const o = e.up[t.lvl - 1];
+  if (R.gold < o) {
+    (sfx.deny(),
+      popup(
+        "NEED $" + o,
+        "#ff7a6a",
+        [BLD_POS[0], BLD_POS[1] + 0.45, BLD_POS[2]],
+        0.5,
+      ));
+    return;
+  }
+  ((R.gold -= o),
+    t.lvl++,
+    (t.spent += o),
+    (t.flash = 0.4),
+    TD.rings.push({ p: [t.x, 0.15, t.z], r: 3, t: 0, max: 0.5, col: e.col }));
+  for (let a = 0; a < 10; a++) {
+    const n = rdir(0.9),
+      s = rand(2, 5);
+    part(
+      "shard",
+      [t.x, 1.5, t.z],
+      [n[0] * s, n[1] * s, n[2] * s],
+      [0.05, 0.05, 0.05],
+      e.col,
+      0.8,
+      { grav: 6, glow: 1 },
+    );
+  }
+  (sfx.tdUpgrade(),
+    popup(
+      t.lvl >= TMAX ? "OVERDRIVE" : "LEVEL " + t.lvl,
+      e.css,
+      [BLD_POS[0], BLD_POS[1] + 0.45, BLD_POS[2]],
+      0.5,
+    ));
+}
+function tdSell(t) {
+  const e = Math.round(t.spent * 0.7);
+  ((R.gold += e),
+    TD.towers.splice(TD.towers.indexOf(t), 1),
+    explodeAt([t.x, 1, t.z], 1.6, TOWERS[t.type].col, !1),
+    sfx.tdSell(),
+    popup(
+      "+$" + e,
+      "#ffd257",
+      [BLD_POS[0], BLD_POS[1] + 0.45, BLD_POS[2]],
+      0.5,
+    ));
+}
+function tdAddTargets() {
+  const t = (e) => Math.atan2(-e[0], -e[2]);
+  ((TD.table = addTarget({
+    kind: "table",
+    td: !0,
+    flat: !0,
+    rect: [TABLE.hw, TABLE.hd],
+    R: 1,
+    x: TABLE.x,
+    y: TABLE.y + 0.004,
+    z: TABLE.z,
+    scale: 1,
+    fixedYaw: 0,
+  })),
+    (TD.cmd = addTarget({
+      kind: "tdcmd",
+      td: !0,
+      rect: [CMDP.w / 2, CMDP.h / 2],
+      R: 1,
+      x: CMD_POS[0],
+      y: CMD_POS[1],
+      z: CMD_POS[2],
+      scale: 1,
+      fixedYaw: t(CMD_POS),
+    })),
+    (TD.bld = addTarget({
+      kind: "tdbuild",
+      td: !0,
+      rect: [BLDP.w / 2, BLDP.h / 2],
+      R: 1,
+      x: BLD_POS[0],
+      y: BLD_POS[1],
+      z: BLD_POS[2],
+      scale: 1,
+      fixedYaw: t(BLD_POS),
+    })),
+    (TD.padT = CITY.pads.map((e, o) =>
+      addTarget({
+        kind: "tdpad",
+        td: !0,
+        flat: !0,
+        pad: o,
+        R: 1.9,
+        x: e[0],
+        y: 0.08,
+        z: e[1],
+        scale: 1,
+        off: !0,
+      }),
+    )));
+}
+function startTD() {
+  (resetRun(),
+    clearEnemies(),
+    tdReset(),
+    (R.kind = "td"),
+    (S.mode = "run"),
+    (S.last = "td"),
+    (S.newBest = !1),
+    (signGoal = SIGN_DOWN),
+    (PL.max = 5 + META.up.vital),
+    (PL.hearts = PL.max),
+    (R.gold = 450 + 250 * META.up.gold),
+    (R.weapons.right = makeGun(META.up.sidearm ? "sixgun" : "peacemaker")),
+    (R.weapons.left = makeGun("peacemaker")),
+    (targets = targets.filter(
+      (t) => t.kind !== "start" && t.kind !== "armory",
+    )),
+    (R.phase = "enter"),
+    startContracts(),
+    sfx.start(),
+    drawBoard(!0),
+    switchMap("city", () => {
+      ((TD.on = !0),
+        tdAddTargets(),
+        (R.phase = "build"),
+        (R.phaseT = 0),
+        (TD.t = 40),
+        showBanner(
+          "NEON GRIDLOCK",
+          "Shoot a pad on the war table, then build a tower",
+        ));
+    }));
+}
+function tdOpenLanes(t) {
+  return t < 2
+    ? [0]
+    : t < 3
+      ? [0, 1]
+      : t < 5
+        ? [0, 1, 2]
+        : t < 7
+          ? [0, 1, 2, 3]
+          : [0, 1, 2, 3, 4];
+}
+function tdNextWave(t) {
+  if (t) {
+    const i = earlyBonus();
+    i > 0 &&
+      (tdGold(i, null),
+      popup(
+        "EARLY +$" + i,
+        "#ffd257",
+        [CMD_POS[0], CMD_POS[1] + 0.45, CMD_POS[2]],
+        0.5,
+      ));
+  }
+  R.wave++;
+  const e = R.wave,
+    o = e % 5 === 0;
+  Object.assign(D, {
+    hp: 1 + 0.15 * (e - 1) + 0.02 * (e - 1) * (e - 1),
+    speed: Math.min(1.35, 1 + 0.02 * (e - 1)),
+    cd: Math.max(0.6, 1 - 0.025 * (e - 1)),
+    proj: Math.min(1.3, 1 + 0.015 * (e - 1)),
+    dodge: 0,
+  });
+  const a = tdOpenLanes(e).filter((i) => !TD.lanes.includes(i));
+  TD.lanes = tdOpenLanes(e);
+  const n = [
+      ["shambler", 1],
+      ["runner", e >= 2 ? Math.min(0.8, 0.15 + e * 0.05) : 0],
+      ["crawler", e >= 3 ? 0.35 : 0],
+      ["coyote", e >= 4 ? 0.3 : 0],
+      ["bloater", e >= 4 ? 0.22 : 0],
+      ["gunslinger", e >= 5 ? 0.2 : 0],
+      ["spitter", e >= 6 ? 0.15 : 0],
+      ["blob", e >= 6 ? 0.18 : 0],
+      ["scorpion", e >= 7 ? 0.2 : 0],
+      ["skeleton", e >= 8 ? 0.15 : 0],
+    ],
+    s = [
+      ["bat", e >= 3 ? 1 : 0],
+      ["drone", e >= 4 ? 1 : 0],
+      ["skull", e >= 6 ? 0.8 : 0],
+      ["buzzard", e >= 8 ? 0.6 : 0],
+      ["saucer", e >= 10 ? 0.6 : 0],
+    ],
+    l = (i) => {
+      const f = i.reduce((m, g) => m + g[1], 0);
+      let u = Math.random() * f;
+      for (const [m, g] of i) if ((u -= g) < 0) return m;
+      return i[0][0];
+    },
+    r = Math.min(70, Math.round(8 + e * 2.6)),
+    c = [];
+  let d = Math.floor(Math.random() * TD.lanes.length),
+    p = 0;
+  for (let i = 0; i < r; i++)
+    (p <= 0 &&
+      ((d = (d + 1 + Math.floor(Math.random() * 2)) % TD.lanes.length),
+      (p = 2 + Math.floor(Math.random() * 3))),
+      p--,
+      c.push({ type: l(n), lane: TD.lanes[d] }));
+  const h = e >= 3 ? Math.min(8, Math.floor((e - 1) / 2)) : 0;
+  for (let i = 0; i < h; i++)
+    c.splice(Math.floor(Math.random() * c.length), 0, { type: l(s), lane: -1 });
+  if (e >= 4 && e % 2 === 0)
+    for (let i = 0; i < Math.floor(e / 6) + 1; i++)
+      c.splice(Math.floor(c.length * (0.4 + i * 0.2)), 0, {
+        type: "brute",
+        lane: TD.lanes[i % TD.lanes.length],
+      });
+  if (o) {
+    const i = ["titan", "drake", "titan", "mothership"][
+      Math.floor(e / 5 - 1) % 4
+    ];
+    c.splice(Math.floor(c.length * 0.3), 0, {
+      type: i,
+      lane: i === "titan" ? 0 : -1,
+    });
+  }
+  ((R.queue = R.queue.concat(c)),
+    (R.cap = Math.min(26, 10 + e)),
+    (R.spawnT = 0.4),
+    (R.spawned = 0),
+    (R.waveSize = R.queue.length),
+    (R.waveHit = !1),
+    (R.bountyDone = !1),
+    (PL.shield = Math.max(PL.shield, R.shieldMax)),
+    (R.phase = "fight"),
+    (R.phaseT = 0));
+  for (const i of TD.padT) i.off = !0;
+  (o
+    ? showBanner(
+        "WAVE " + e + "  ·  BOSS",
+        c.find((i) => ETYPES[i.type].boss)
+          ? ETYPES[c.find((i) => ETYPES[i.type].boss).type].name + " INCOMING"
+          : "",
+      )
+    : a.length
+      ? showBanner(
+          "WAVE " + e,
+          "New breach opened · watch the " +
+            ["north", "west", "east", "north-west", "north-east"][a[0]],
+        )
+      : showBanner("WAVE " + e, r + " hostiles" + (h ? " · air raid" : "")),
+    sfx.wave(),
+    drawBoard(!0));
+}
+function tdSpawnNext() {
+  const t = R.queue.shift();
+  R.spawned++;
+  let e = null;
+  (t.lane >= 0
+    ? (e = tdSpawnGround(t.type, t.lane))
+    : t.type === "bat" || t.type === "skull"
+      ? (e = spawnCreature(t.type))
+      : t.type === "drake"
+        ? (e = spawnDrake())
+        : (e = spawnEnemy(t.type)),
+    e &&
+      (e.T.boss
+        ? ((e.hp *= 3.5), (e.maxHp = e.hp))
+        : e.T.mini && ((e.hp *= 2), (e.maxHp = e.hp)),
+      maybeElite(e),
+      !R.bountyDone &&
+        R.spawned >= R.waveSize * 0.4 &&
+        ((R.bountyDone = !0), R.wave >= 3 && markBounty())));
+}
+function tdSpawnGround(t, e, o) {
+  const a = CITY.lanes[e],
+    n = o ?? rand(0, 1.5),
+    [s, l, r, c] = lanePoint(a, n),
+    d = rand(-2.2, 2.2) * (e === 0 ? 1.4 : 1),
+    p = makeEnemy(t, s - c * d, l + r * d, {
+      brain: "lane",
+      lane: a,
+      li: e,
+      prog: n,
+      lat: d,
+      weave: rand(0, 6),
+      atkCd: 0,
+      groanT: rand(2, 6),
+      lurch: rand(0.9, 1.1),
+      swell: 0,
+      squash: 0,
+      vy: 0,
+      hopT: 0,
+      shootCd: rand(3, 7),
+      slamT: 6,
+      summonT: 12,
+      heartT: 0,
+      screamT: 0,
+      hbList: null,
+    });
+  return (
+    ETYPES[t].brain === "zombie" && zombieLook(p),
+    (p.faceYaw = p.yaw = Math.atan2(r, c)),
+    (p.y = -1.8 * p.s),
+    (p.state = "spawn"),
+    (p.st = 0),
+    puff([p.x, 0.2, p.z], 6, [0.55, 0.35, 0.7], 0.45, 1.3),
+    hdist(p) < 40 && sfx.rise([p.x, 0.3, p.z]),
+    t === "titan" &&
+      (sfx.roar([p.x, 3, p.z]),
+      puff([p.x, 0.5, p.z], 20, [0.4, 0.3, 0.5], 1.2, 2.5)),
+    p
+  );
+}
+const tdSpeed = (t) =>
+  (t.type === "titan" ? 0.85 : clamp(t.T.speed * 1.7, 1.5, 4.2)) *
+  D.speed *
+  (t.lurch || 1) *
+  (t.rage > 0 ? 1.3 : 1);
+function tdLaneHB(t) {
+  const e = t.T;
+  if (t.type === "titan")
+    t.hbList = [
+      [0, 1.25, 0.2, 0.13, 3, "heart"],
+      [0, 1.2, 0, 0.45, 1],
+      [0, 1.8, 0.05, 0.2, 2],
+      [0, 0.45, 0, 0.32, 1],
+    ];
+  else if (t.type === "brute")
+    t.hbList = [
+      [0, 1, 0.42, 0.42, 0, "shield"],
+      [0, 1.15, 0, 0.36, 1],
+      [0, 1.66, 0.04, 0.17, 2],
+      [0, 0.42, 0, 0.26, 1],
+    ];
+  else if (e.brain === "zombie" && !e.crawl && !e.bloat) {
+    const o = (t.hunch = e.speed > 2 ? 0.32 : 0.14),
+      a = Math.cos(o),
+      n = Math.sin(o);
+    t.hbList = [
+      [0, 1.12 * a, 1.12 * n, 0.3, 1],
+      [0, 1.6 * a, 1.6 * n + 0.04, 0.17, 2],
+      [0, 0.45, 0, 0.24, 1],
+    ];
+  }
+}
+BRAINS.lane = function (t, e) {
+  const o = t.T,
+    a = t.lane;
+  if (
+    (o.undead &&
+      ((t.groanT -= e),
+      t.groanT <= 0 &&
+        ((t.groanT = rand(4, 9)),
+        hdist(t) < 26 && sfx.groan([t.x, t.y + 1.5, t.z]))),
+    tdLaneHB(t),
+    t.state === "spawn")
+  ) {
+    t.st += e;
+    const h = Math.min(1, t.st / (t.type === "titan" ? 2.6 : 1.1));
+    ((t.rise = h),
+      (t.y = -(1 - h) * (1 - h) * 1.8 * t.s),
+      h >= 1 && ((t.state = "move"), (t.st = 0), (t.y = 0)));
+    return;
+  }
+  if (t.state === "tele") {
+    if (((t.st += e), t.type === "titan")) {
+      t.st >= 1.1 && (tdTitanSlam(t), (t.state = "recover"), (t.st = 0));
+      return;
+    }
+    ((t.faceYaw = toHead(t)),
+      t.st >= ((o.shoot && o.shoot.tele) || 0.7) &&
+        (o.fire
+          ? o.fire(t)
+          : (eFire(t, lw(t, 0, 1.55, 0.25), "acid", { flight: 1.4 }),
+            sfx.splat(lw(t, 0, 1.5, 0.3))),
+        (t.state = "swipe"),
+        (t.st = 0),
+        (t.recoil = 1),
+        (t.shootCd = rand(5, 9) * D.cd)));
+    return;
+  }
+  if (t.state === "swipe" || t.state === "recover") {
+    ((t.st += e),
+      (t.recoil = Math.max(0, (t.recoil || 0) - e * 3)),
+      t.st > (t.type === "titan" ? 1 : 0.45) &&
+        ((t.state = "move"), (t.st = 0)));
+    return;
+  }
+  const n = tdSpeed(t);
+  t.prog += n * e;
+  const [s, l, r, c] = lanePoint(a, t.prog),
+    d = t.lat * Math.min(1, (a.len - t.prog) / 8),
+    p = Math.min(1, e * 5);
+  if (
+    ((t.x = lerp(t.x, s - c * d, p)),
+    (t.z = lerp(t.z, l + r * d, p)),
+    (t.walk += e * n * (o.crawl ? 3 : o.brain === "charger" ? 2.4 : 3.6)),
+    (t.faceYaw = Math.atan2(r, c)),
+    (t.y =
+      o.brain === "hopper"
+        ? Math.abs(Math.sin(t.age * 4 + t.weave)) * 0.45 * t.s
+        : 0),
+    o.brain === "hopper" &&
+      (t.squash =
+        Math.max(0, 1 - Math.abs(Math.sin(t.age * 4 + t.weave)) * 4) * 0.3),
+    t.type === "titan")
+  ) {
+    if (
+      ((t.slamT -= e),
+      (t.summonT -= e),
+      t.slamT <= 0 &&
+        ((t.slamT = rand(7, 9)),
+        (t.state = "tele"),
+        (t.st = 0),
+        (t.atkKind = "slam"),
+        sfx.tele([t.x, t.y + 4, t.z])),
+      t.summonT <= 0)
+    ) {
+      t.summonT = 13;
+      for (let h = 0; h < 3; h++)
+        enemies.length < 30 &&
+          tdSpawnGround(
+            Math.random() < 0.5 ? "shambler" : "runner",
+            t.li,
+            Math.max(0, t.prog - 3 - h * 1.6),
+          );
+    }
+  } else
+    o.shoot &&
+      ((t.shootCd -= e),
+      t.shootCd <= 0 &&
+        hdist(t) < 24 &&
+        TD.ko <= 0 &&
+        ((t.state = "tele"), (t.st = 0), sfx.tele([t.x, t.y + 1.5, t.z])));
+  t.prog >= a.len - 2.6 && tdBreach(t);
+};
+function tdTitanSlam(t) {
+  const e = lw(t, 0, 0.05, 0.9);
+  (sfx.slam(e),
+    sfx.tdEmp(e),
+    hapticAll(0.5, 150),
+    puff(e, 18, [0.4, 0.3, 0.5], 0.8, 3),
+    TD.rings.push({
+      p: [e[0], 0.15, e[2]],
+      r: 10,
+      t: 0,
+      max: 0.7,
+      col: [1, 0.3, 0.4],
+    }));
+  let o = 0;
+  for (const a of TD.towers)
+    if (Math.hypot(a.x - t.x, a.z - t.z) < 10) {
+      ((a.emp = 5), o++);
+      for (let n = 0; n < 6; n++)
+        bolt(
+          [a.x, 2, a.z],
+          [a.x + rand(-1.5, 1.5), rand(0.5, 3), a.z + rand(-1.5, 1.5)],
+          [1, 0.4, 0.5],
+          0.04,
+          0.3,
+        );
+    }
+  o &&
+    !TD.empTold &&
+    ((TD.empTold = !0),
+    showBanner("EMP SLAM", "Towers near the titan are knocked offline"));
+}
+function tdBreach(t) {
+  const e =
+    t.type === "titan" ? 8 : t.T.mini ? 3 : t.type === "bloater" ? 2 : 1;
+  ((TD.core = Math.max(0, TD.core - e)), (TD.coreHit = 1), (R.waveHit = !0));
+  const o = [CITY.core[0], 1.2, CITY.core[1]];
+  (bolt([o[0], 6.2, o[2]], o, [1, 0.3, 0.4], 0.1, 0.3),
+    bolt(o, [t.x, t.y + 1, t.z], [1, 0.3, 0.4], 0.08, 0.3),
+    explodeAt([t.x, t.y + 1, t.z], 1.6, [1, 0.35, 0.5], !1),
+    killEnemy(t, !0),
+    sfx.tdCore(o),
+    popup("-" + e, "#ff5a6a", [o[0], o[1] + 1.4, o[2]], 1.4),
+    TD.core <= 0
+      ? (TD.lost = !0)
+      : TD.core <= TD.coreMax * 0.3 &&
+        !TD.warned &&
+        ((TD.warned = !0),
+        showBanner(
+          "BEACON CRITICAL",
+          TD.core + " left · repair it with level-up picks",
+        )));
+}
+function tdKill(t, e) {
+  const o = t.byTower,
+    a = Math.max(
+      1,
+      Math.round(
+        (t.T.gold || 20) *
+          (o ? 0.42 : 0.9 * comboMul()) *
+          (t.elite ? 2.5 : 1) *
+          (t.bounty ? 3 : 1) *
+          (t.T.boss ? 1.5 : 1),
+      ),
+    ),
+    n = Math.hypot(e[0] - headPos[0], e[2] - headPos[2]) < 26;
+  (tdGold(
+    a,
+    !o || n || t.T.boss || t.T.mini
+      ? [e[0], e[1] + 0.5 * Math.min(2, t.s), e[2]]
+      : null,
+  ),
+    o &&
+      ((R.stat.tkills = (R.stat.tkills || 0) + 1),
+      t.lastTower && t.lastTower.kills++),
+    (TD.charge = Math.min(
+      1,
+      TD.charge + (o ? 0.01 : 0.022) * (t.T.boss ? 10 : t.T.mini ? 4 : 1),
+    )),
+    (t.T.boss || t.T.mini) &&
+      (R.bossKills++, t.T.boss && showBanner(t.T.name + " FALLS", "+$" + a)));
+}
+function tdGold(t, e) {
+  ((t = Math.round(t)),
+    (R.gold += t),
+    (R.goldTotal = (R.goldTotal || 0) + t),
+    e && popup("+$" + t, "#ffd257", e, 0.75),
+    gate("tdcoin", 0.1) && sfx.coin());
+}
+function tdSplit(t) {
+  for (let e = 0; e < 2; e++) {
+    const o = tdSpawnGround(t.T.split, t.li, Math.max(0, t.prog - e * 0.8));
+    ((o.state = "move"),
+      (o.y = 0),
+      (o.x = t.x + (e ? 0.6 : -0.6)),
+      (o.z = t.z));
+  }
+}
+function tdWaveClear() {
+  ((R.phase = "clear"), (R.phaseT = 0));
+  const t = 45 + 12 * R.wave;
+  (tdGold(t, null), R.waveHit || (R.stat.clean = (R.stat.clean || 0) + 1));
+  for (const e of eshots) puff(e.p, 2, [0.7, 0.6, 0.6], 0.15, 0.5);
+  ((eshots = []),
+    showBanner(
+      "WAVE " + R.wave + " HELD",
+      "+$" + t + " · build for the next one",
+    ),
+    sfx.clear());
+}
+function tdKO() {
+  TD.ko > 0 ||
+    ((TD.ko = 8),
+    (PL.hearts = 0),
+    (PL.invuln = 8),
+    (TD.armed = !1),
+    sfx.die(),
+    showBanner("YOU ARE DOWN", "Rebooting in 8 s · the towers hold the line"));
+}
+function tdLose() {
+  (showBanner("THE CITY FALLS", "The Beacon is out"),
+    explodeAt([CITY.core[0], 6.2, CITY.core[1]], 5, [0.5, 0.9, 1], !0));
+  for (const t of TD.towers) t.emp = 99;
+  endRun();
+}
+function tdLootSpot() {
+  const t = PL.viewA + rand(-0.8, 0.8);
+  return [headPos[0] + Math.sin(t) * 2.3, 1.3, headPos[2] - Math.cos(t) * 2.3];
+}
+(Object.assign(BOONS, {
+  overclock: {
+    name: "OVERCLOCK",
+    desc: "Every tower fires 15% faster.",
+    td: !0,
+    apply() {
+      TD.rateMul *= 1.15;
+    },
+  },
+  optics: {
+    name: "LONG OPTICS",
+    desc: "Every tower reaches 12% farther.",
+    td: !0,
+    apply() {
+      TD.rangeMul *= 1.12;
+    },
+  },
+  payload: {
+    name: "HOT PAYLOAD",
+    desc: "Towers deal 15% more damage.",
+    td: !0,
+    apply() {
+      TD.dmgMul *= 1.15;
+    },
+  },
+  repair: {
+    name: "PATCH THE GRID",
+    desc: "Repair the Beacon by 5.",
+    td: !0,
+    apply() {
+      ((TD.core = Math.min(TD.coreMax, TD.core + 5)),
+        (TD.warned = TD.core <= TD.coreMax * 0.3));
+    },
+  },
+  swarm: {
+    name: "SWARM LOGIC",
+    desc: "Wingman drones hit 30% harder.",
+    td: !0,
+    apply() {
+      TD.droneMul *= 1.3;
+    },
+  },
+}),
+  CONTRACTS.push(
+    {
+      id: "towers",
+      text: (t) => "Build " + t + " towers",
+      n: [6, 9, 12],
+      stat: "towers",
+      souls: 8,
+      td: !0,
+    },
+    {
+      id: "tkills",
+      text: (t) => t + " tower kills",
+      n: [60, 120, 200],
+      stat: "tkills",
+      souls: 8,
+      td: !0,
+    },
+  ));
+const TDM = m4(),
+  tdIsAir = (t) => !t.lane && t.y - groundAt(t.x, t.z) > 1.1;
+function tdHB(t) {
+  for (const e of t.hbw) if (e[4] >= 1) return e;
+  return t.hbw[0];
+}
+function tdShot(t, e, o = 1) {
+  const a = tv(t, "dmg");
+  return {
+    W: { dmg: e.dmg[0], col: e.col, fx: e.fx },
+    inst: null,
+    dmg: a * TD.dmgMul * o,
+    g: null,
+    tower: t,
+  };
+}
+function tdMuzzle(t, e) {
+  return xf(
+    trs(
+      TDM,
+      t.x,
+      t.y0 + TWM[t.type].hy * t.sc,
+      t.z,
+      t.yaw,
+      t.pitch,
+      0,
+      t.sc,
+      t.sc,
+      t.sc,
+    ),
+    e,
+  );
+}
+function tdPick(t, e, o) {
+  let a = null,
+    n = -1 / 0;
+  for (const s of enemies) {
+    if (
+      s.state === "dead" ||
+      s.state === "spawn" ||
+      s.phased > 0 ||
+      !s.hbw.length ||
+      (tdIsAir(s) && !e.air)
+    )
+      continue;
+    const l = Math.hypot(s.x - t.x, s.z - t.z);
+    if (l > o || (e.min && l < e.min)) continue;
+    const r =
+      t.mode === "strong"
+        ? s.hp + (s.T.boss ? 1e3 : 0)
+        : t.mode === "close"
+          ? -l
+          : (s.lane ? s.prog / s.lane.len : 0.45) + (s.T.boss ? 0.3 : 0);
+    r > n && ((n = r), (a = s));
+  }
+  return a;
+}
+function tdHitQuiet(t, e, o, a, n, s, l) {
+  ((TD.quiet = !0),
+    (e.byTower = !0),
+    (e.lastTower = t.tower),
+    hitEnemy(t, e, o, a, n, s, l),
+    (TD.quiet = !1));
+}
+function tdUpdateTowers(t) {
+  for (const e of TD.towers) {
+    if (e.drop < 1 || e.emp > 0) continue;
+    const o = TOWERS[e.type],
+      a = TWM[e.type],
+      n = tv(e, "range") * TD.rangeMul;
+    ((e.cd -= t * TD.rateMul),
+      (e.retarget -= t),
+      e.target &&
+        (e.target.state === "dead" ||
+          Math.hypot(e.target.x - e.x, e.target.z - e.z) > n + 1) &&
+        (e.target = null),
+      (!e.target || e.retarget <= 0) &&
+        ((e.target = tdPick(e, o, n)), (e.retarget = 0.25)),
+      a.spin && (e.spin += t * (e.target ? 9 : 2.5)));
+    const s = e.target;
+    if (!s || !s.hbw.length) {
+      a.spin || (e.yaw += t * 0.3);
+      continue;
+    }
+    const l = tdHB(s),
+      r = [l[0], l[1], l[2]],
+      c = e.y0 + a.hy * e.sc,
+      d = Math.atan2(r[0] - e.x, r[2] - e.z);
+    if (
+      (a.head && !a.spin && (e.yaw = angTo(e.yaw, d, t * 9)),
+      a.head &&
+        !a.noPitch &&
+        (e.pitch = -Math.atan2(r[1] - c, Math.hypot(r[0] - e.x, r[2] - e.z))),
+      e.cd > 0)
+    )
+      continue;
+    let p = d - e.yaw;
+    for (; p > Math.PI;) p -= TAU;
+    for (; p < -Math.PI;) p += TAU;
+    if (!(a.head && !a.spin && Math.abs(p) > 0.35)) {
+      if (((e.cd = tv(e, "cd")), e.type === "sentry")) {
+        const h = tdMuzzle(e, a.muzzle[(e.barrel ^= 1)]),
+          i = norm([r[0] - h[0], r[1] - h[1], r[2] - h[2]]);
+        (tdHitQuiet(tdShot(e, o), s, l, r, i),
+          tracers.push({ a: h, b: r, t: 0, col: o.col, w: 0.05 }),
+          flashes.push({ p: h, t: 0, s: 0.6, c: o.col }),
+          sfx.tdGun(h));
+      } else if (e.type === "tesla") {
+        const h = [e.x, c, e.z],
+          i = tdShot(e, o),
+          f = new Set([s]);
+        (bolt(h, r, o.col, 0.06, 0.25), tdHitQuiet(i, s, l, r, null));
+        let u = r;
+        for (const m of nearestEnemies(r, 6.5, f, tv(e, "chain") - 1)) {
+          const g = enemyCenter(m);
+          (bolt(u, g, o.col, 0.045, 0.25),
+            tdHitQuiet(i, m, tdHB(m), g, null, !1, 0.8),
+            (u = g));
+        }
+        (flashes.push({ p: h, t: 0, s: 1.6, c: o.col }), sfx.tdZap(h));
+      } else if (e.type === "frost") {
+        const h = tdShot(e, o);
+        for (const i of enemies.slice()) {
+          if (
+            i.state === "dead" ||
+            !i.hbw.length ||
+            tdIsAir(i) ||
+            Math.hypot(i.x - e.x, i.z - e.z) > n
+          )
+            continue;
+          const f = tdHB(i);
+          tdHitQuiet(h, i, f, [f[0], f[1], f[2]], null, !0);
+        }
+        (TD.rings.push({
+          p: [e.x, 0.15, e.z],
+          r: n,
+          t: 0,
+          max: 0.6,
+          col: [0.55, 0.9, 1],
+        }),
+          puff([e.x, 1.4, e.z], 5, [0.78, 0.92, 1], 0.5, 1.6),
+          sfx.tdFrost([e.x, 1, e.z]));
+      } else if (e.type === "mortar") {
+        let i = [s.x, 0.05, s.z];
+        if (s.lane) {
+          const m = lanePoint(
+            s.lane,
+            s.prog + tdSpeed(s) * timeFactor(s) * 1.5,
+          );
+          i = [m[0], 0.05, m[1]];
+        }
+        const f = tdMuzzle(e, a.muzzle),
+          u = [
+            (i[0] - f[0]) / 1.5,
+            (i[1] - f[1] + 0.5 * 9.8 * 1.5 * 1.5) / 1.5,
+            (i[2] - f[2]) / 1.5,
+          ];
+        (TD.shells.push({
+          p: f,
+          v: u,
+          t: 0,
+          sh: tdShot(e, o),
+          r: tv(e, "splash"),
+        }),
+          puff(f, 5, [0.6, 0.55, 0.6], 0.35, 1.2),
+          flashes.push({ p: f, t: 0, s: 1.2, c: o.col }),
+          sfx.tdMortar(f));
+      } else if (e.type === "flame") {
+        const h = tdMuzzle(e, a.muzzle),
+          i = norm([r[0] - e.x, 0, r[2] - e.z]),
+          f = tdShot(e, o);
+        for (const u of enemies.slice()) {
+          if (u.state === "dead" || !u.hbw.length || tdIsAir(u)) continue;
+          const m = u.x - e.x,
+            g = u.z - e.z,
+            w = Math.hypot(m, g);
+          if (w > n || w < 0.2 || (m * i[0] + g * i[2]) / w < 0.86) continue;
+          const M = tdHB(u);
+          tdHitQuiet(f, u, M, [M[0], M[1], M[2]], null, !0);
+        }
+        for (let u = 0; u < 3 && TD.flames.length < 140; u++) {
+          const m = rand(9, 12);
+          TD.flames.push({
+            p: h.slice(),
+            v: [
+              i[0] * m + rand(-1.2, 1.2),
+              rand(-0.2, 1.4),
+              i[2] * m + rand(-1.2, 1.2),
+            ],
+            t: 0,
+            life: (n / m) * rand(0.9, 1.15),
+          });
+        }
+        sfx.tdFlame(h);
+      } else if (e.type === "rail") {
+        const h = tdMuzzle(e, a.muzzle),
+          i = norm([r[0] - h[0], r[1] - h[1], r[2] - h[2]]),
+          f = [
+            h[0] + i[0] * n * 1.1,
+            h[1] + i[1] * n * 1.1,
+            h[2] + i[2] * n * 1.1,
+          ],
+          u = [];
+        for (const g of enemies) {
+          if (g.state === "dead" || !g.hbw.length) continue;
+          let w = 1 / 0,
+            M = null;
+          for (const x of g.hbw)
+            if (x[5] !== "shield" && segDist3(h, f, x) < x[3] + 0.12) {
+              const b =
+                (x[0] - h[0]) * i[0] +
+                (x[1] - h[1]) * i[1] +
+                (x[2] - h[2]) * i[2];
+              b > 0 && b < w && ((w = b), (M = x));
+            }
+          M && u.push([w, g, M]);
+        }
+        u.sort((g, w) => g[0] - w[0]);
+        const m = tdShot(e, o);
+        for (const [, g, w] of u.slice(0, tv(e, "pierce")))
+          (tdHitQuiet(m, g, w, [w[0], w[1], w[2]], i),
+            flashes.push({ p: [w[0], w[1], w[2]], t: 0, s: 1.4, c: o.col }));
+        (zaps.push({
+          kind: "beam",
+          a: h,
+          b: f,
+          t: 0,
+          max: 0.35,
+          col: o.col,
+          w: 0.22,
+        }),
+          zaps.push({
+            kind: "beam",
+            a: h,
+            b: f,
+            t: 0,
+            max: 0.2,
+            col: [1, 1, 1],
+            w: 0.07,
+          }),
+          flashes.push({ p: h, t: 0, s: 2, c: o.col }),
+          sfx.tdRail(h));
+      }
+    }
+  }
+}
+function tdDroneTarget() {
+  let t = null,
+    e = 1 / 0;
+  for (const o of enemies) {
+    if (
+      o.state === "dead" ||
+      o.state === "spawn" ||
+      o.phased > 0 ||
+      !o.hbw.length
+    )
+      continue;
+    const a = hdist(o);
+    if (a > 30) continue;
+    const n =
+      a -
+      (tdIsAir(o) ? 10 : 0) -
+      (o.state === "tele" ? 6 : 0) -
+      (o.T.boss ? 4 : 0);
+    n < e && ((e = n), (t = o));
+  }
+  return t;
+}
+function tdUpdateDrones(t) {
+  const e = TD.drones.length;
+  TD.drones.forEach((o, a) => {
+    const n = clock * 0.7 + (a * TAU) / e,
+      s = [
+        headPos[0] + Math.sin(n) * 1.5,
+        headPos[1] + 0.8 + Math.sin(clock * 1.7 + a * 2) * 0.08,
+        headPos[2] - Math.cos(n) * 1.5,
+      ],
+      l = Math.min(1, t * 5);
+    for (let i = 0; i < 3; i++) o.p[i] = lerp(o.p[i], s[i], l);
+    ((o.cd -= t),
+      (o.retarget -= t),
+      (!o.target || o.target.state === "dead" || o.retarget <= 0) &&
+        ((o.target = tdDroneTarget()), (o.retarget = 0.3)));
+    const r = o.target;
+    if (!r || !r.hbw.length || TD.ko > 0) {
+      o.yaw += t;
+      return;
+    }
+    const c = tdHB(r),
+      d = [c[0], c[1], c[2]];
+    if (
+      ((o.yaw = angTo(o.yaw, Math.atan2(d[0] - o.p[0], d[2] - o.p[2]), t * 10)),
+      o.cd > 0)
+    )
+      return;
+    o.cd = 0.3;
+    const p = norm([d[0] - o.p[0], d[1] - o.p[1], d[2] - o.p[2]]),
+      h = 0.55 * (1 + 0.05 * (R.wave - 1)) * TD.droneMul;
+    ((TD.quiet = !0),
+      (r.byTower = !1),
+      hitEnemy(
+        { W: { dmg: 0.55, col: [1, 0.45, 0.9] }, inst: null, dmg: h, g: null },
+        r,
+        c,
+        d,
+        p,
+      ),
+      (TD.quiet = !1),
+      tracers.push({
+        a: o.p.slice(),
+        b: d,
+        t: 0,
+        col: [1, 0.45, 0.9],
+        w: 0.022,
+      }),
+      flashes.push({ p: o.p.slice(), t: 0, s: 0.3, c: [1, 0.5, 0.9] }),
+      sfx.tdDrone(o.p));
+  });
+}
+function tdStrikeShot(t, e, o) {
+  const a = castRay(t, e);
+  let n = null;
+  if (a && a.t && a.t.kind === "table") {
+    const l = fromTable(a.point);
+    n = [l[0], 0, l[1]];
+  } else {
+    if (a && a.t) return !1;
+    if (a && a.e) n = [a.e.x, 0, a.e.z];
+    else if (e[1] < -0.004) {
+      const l = -t[1] / e[1];
+      l < 170 && (n = [t[0] + e[0] * l, 0, t[2] + e[2] * l]);
+    }
+  }
+  if (!n) return !1;
+  (tracers.push({
+    a: o.muzzle.slice(),
+    b: a ? a.point : n,
+    t: 0,
+    col: [1, 0.35, 0.3],
+    w: 0.02,
+  }),
+    (TD.armed = !1),
+    (TD.ready = !1),
+    (TD.charge = 0));
+  const s = shuffle([
+    [0, 0],
+    [3, 0],
+    [-3, 0],
+    [0, 3],
+    [0, -3],
+    [2.2, 2.2],
+    [-2.2, -2.2],
+    [2.2, -2.2],
+    [-2.2, 2.2],
+  ]);
+  return (
+    TD.strikes.push({ p: n, t: -1.3, n: 0, offs: s }),
+    sfx.tdWhistle(n),
+    showBanner("AIRSTRIKE INBOUND", "Danger close"),
+    !0
+  );
+}
+function tdUpdateStrikes(t) {
+  for (let e = TD.strikes.length - 1; e >= 0; e--) {
+    const o = TD.strikes[e];
+    for (o.t += t; o.n < o.offs.length && o.t >= o.n * 0.14;) {
+      const a = [o.p[0] + o.offs[o.n][0], 0.15, o.p[2] + o.offs[o.n][1]],
+        n = 7 * (1 + 0.12 * (R.wave - 1));
+      (zaps.push({
+        kind: "beam",
+        a: [a[0] + 8, 70, a[2] - 20],
+        b: a,
+        t: 0,
+        max: 0.22,
+        col: [1, 0.8, 0.5],
+        w: 0.4,
+      }),
+        (TD.quiet = !0),
+        blast(
+          a,
+          3.2,
+          n,
+          {
+            W: { dmg: 7, col: [1, 0.6, 0.3], fx: "burn" },
+            inst: null,
+            dmg: n,
+            g: null,
+          },
+          [1, 0.55, 0.25],
+        ),
+        (TD.quiet = !1),
+        hapticAll(0.4, 60),
+        o.n++);
+    }
+    o.n >= o.offs.length && TD.strikes.splice(e, 1);
+  }
+}
+function tdUpdate(t) {
+  if (((R.phaseT += t), R.phase !== "enter")) {
+    if (TD.lost) {
+      ((TD.lost = !1), tdLose());
+      return;
+    }
+    TD.ko > 0 &&
+      ((TD.ko -= t),
+      (PL.invuln = Math.max(PL.invuln, 0.3)),
+      TD.ko <= 0 &&
+        ((TD.ko = 0),
+        (PL.hearts = PL.max),
+        (PL.heal = 1),
+        sfx.heal(),
+        showBanner("BACK ONLINE", "Hearts restored")));
+    for (const e of TD.padT) e.off = R.phase !== "build";
+    if (R.phase === "build") ((TD.t -= t), TD.t <= 0 && tdNextWave(!1));
+    else if (R.phase === "fight") {
+      R.spawnT -= t;
+      const e = liveEnemies();
+      (R.queue.length &&
+        R.spawnT <= 0 &&
+        e < R.cap &&
+        (tdSpawnNext(),
+        (R.spawnT = rand(0.6, 1.15) * Math.max(0.5, 1 - R.wave * 0.02))),
+        (TD.charge = Math.min(1, TD.charge + t * 0.004)),
+        !R.queue.length && liveEnemies() === 0 && tdWaveClear());
+    } else
+      R.phase === "clear" &&
+        R.phaseT > 2.5 &&
+        ((R.phase = "build"), (R.phaseT = 0), (TD.t = 22));
+    (TD.charge >= 1 &&
+      !TD.ready &&
+      ((TD.ready = !0),
+      showBanner("AIRSTRIKE READY", "Shoot AIRSTRIKE on the command panel"),
+      sfx.tdReady()),
+      tdUpdateTowers(t),
+      tdUpdateDrones(t),
+      tdUpdateStrikes(t));
+  }
+}
+function tdTick(t) {
+  if (TD.on) {
+    TD.coreHit = Math.max(0, TD.coreHit - t * 2);
+    for (const e of TD.towers)
+      (e.drop < 1 &&
+        ((e.drop = Math.min(1, e.drop + t * 1.7)),
+        e.drop >= 1 &&
+          (puff([e.x, 0.3, e.z], 12, [0.5, 0.45, 0.6], 0.6, 2.2),
+          TD.rings.push({
+            p: [e.x, 0.12, e.z],
+            r: 3.2,
+            t: 0,
+            max: 0.45,
+            col: TOWERS[e.type].col,
+          }),
+          sfx.tdLand([e.x, 0.5, e.z]))),
+        (e.y0 = (1 - e.drop) * (1 - e.drop) * 30),
+        (e.sc = 1 + 0.08 * (e.lvl - 1)),
+        e.emp > 0 &&
+          ((e.emp -= t),
+          Math.random() < t * 6 &&
+            bolt(
+              [e.x, 1.5 + rand(0, 1), e.z],
+              [e.x + rand(-1, 1), rand(0.5, 2.5), e.z + rand(-1, 1)],
+              [1, 0.4, 0.5],
+              0.03,
+              0.15,
+            )),
+        (e.flash = Math.max(0, e.flash - t)));
+    for (let e = TD.shells.length - 1; e >= 0; e--) {
+      const o = TD.shells[e];
+      ((o.t += t),
+        (o.v[1] -= 9.8 * t),
+        (o.p[0] += o.v[0] * t),
+        (o.p[1] += o.v[1] * t),
+        (o.p[2] += o.v[2] * t),
+        Math.random() < t * 25 &&
+          puffs.length < 160 &&
+          puff(o.p, 1, [0.55, 0.5, 0.55], 0.12, 0.2),
+        o.v[1] < 0 &&
+          o.p[1] <= 0.1 &&
+          ((TD.quiet = !0),
+          blast([o.p[0], 0.2, o.p[2]], o.r, o.sh.dmg, o.sh, [1, 0.6, 0.25]),
+          (TD.quiet = !1),
+          TD.shells.splice(e, 1)));
+    }
+    for (let e = TD.flames.length - 1; e >= 0; e--) {
+      const o = TD.flames[e];
+      if (((o.t += t), o.t > o.life)) {
+        TD.flames.splice(e, 1);
+        continue;
+      }
+      const a = Math.max(0, 1 - t * 1.5);
+      ((o.v[0] *= a),
+        (o.v[2] *= a),
+        (o.v[1] += t * 2),
+        (o.p[0] += o.v[0] * t),
+        (o.p[1] += o.v[1] * t),
+        (o.p[2] += o.v[2] * t));
+    }
+    for (let e = TD.rings.length - 1; e >= 0; e--)
+      ((TD.rings[e].t += t),
+        TD.rings[e].t > TD.rings[e].max && TD.rings.splice(e, 1));
+    ((TD.hover = -1), (TD.bhover = -1), (TD.chover = -1));
+    for (const e of guns) {
+      const o = e.aim;
+      if (!(!o || !o.t))
+        if (o.t.kind === "table") {
+          const [a, n] = fromTable(o.point);
+          TD.hover = nearestPad(a, n, 4.5);
+        } else
+          o.t.kind === "tdpad" && !o.t.off
+            ? (TD.hover = o.t.pad)
+            : o.t.kind === "tdbuild"
+              ? (TD.bhover = buildCell(panelPx(o.t, BLDP, o.point)))
+              : o.t.kind === "tdcmd" &&
+                (TD.chover = cmdRow(panelPx(o.t, CMDP, o.point)));
+    }
+    (TD.cmd && paintCmd(), TD.bld && paintBuild());
+  }
+}
+const TDA = m4(),
+  TDB = m4(),
+  coreCol = () => {
+    const t = TD.core / TD.coreMax;
+    return t > 0.5
+      ? mix3([1, 0.75, 0.3], [0.35, 0.95, 1], (t - 0.5) * 2)
+      : mix3([1, 0.2, 0.25], [1, 0.75, 0.3], t * 2);
+  };
+function tdBuildFrame() {
+  if (!TD.on) return;
+  for (const s of enemies) {
+    if (s.state === "dead" || !inTreg(s.x, s.z)) continue;
+    const l = tdIsAir(s),
+      r = toTable(s.x, s.z, l ? 0.03 : 0.008),
+      c = s.T.boss
+        ? [1, 0.85, 0.2]
+        : l
+          ? [1, 0.35, 0.95]
+          : s.elite
+            ? [1, 0.6, 0.2]
+            : [1, 0.22, 0.15];
+    ppush(
+      PT.glow,
+      r[0],
+      r[1],
+      r[2],
+      s.T.boss ? 0.05 : s.T.mini ? 0.032 : 0.02,
+      c[0],
+      c[1],
+      c[2],
+      0.95,
+    );
+  }
+  for (const s of TD.towers) {
+    const l = TOWERS[s.type],
+      r = toTable(s.x, s.z),
+      c = 0.014 + 0.003 * s.lvl,
+      d = s.emp <= 0;
+    if (
+      (bpush(
+        B.cube,
+        r[0],
+        r[1] + c * 0.75,
+        r[2],
+        c,
+        c * 1.5,
+        c,
+        s.yaw,
+        0,
+        0,
+        l.col[0] * 0.7,
+        l.col[1] * 0.7,
+        l.col[2] * 0.7,
+        1,
+      ),
+      ppush(
+        PT.glow,
+        r[0],
+        r[1] + c * 1.8,
+        r[2],
+        0.012 + 0.004 * s.lvl,
+        l.col[0],
+        l.col[1],
+        l.col[2],
+        d ? 0.9 : 0.25,
+      ),
+      d && s.drop >= 1)
+    ) {
+      const p = TWM[s.type],
+        h = [s.x, s.y0 + p.hy * s.sc + (p.head ? 0.2 : 0), s.z];
+      ppush(
+        PT.glow,
+        h[0],
+        h[1],
+        h[2],
+        s.type === "tesla" ? 1.4 + 0.3 * Math.sin(clock * 9 + s.pad) : 0.7,
+        l.col[0],
+        l.col[1],
+        l.col[2],
+        0.55,
+      );
+    }
+    for (let p = 0; p < s.lvl; p++) {
+      const h = s.pad + p * 0.5;
+      ppush(
+        PT.glow,
+        s.x + Math.sin(h) * 1.25,
+        0.42,
+        s.z + Math.cos(h) * 1.25,
+        0.22,
+        1,
+        0.85,
+        0.35,
+        0.8,
+      );
+    }
+  }
+  for (const s of TD.drones) {
+    const l = toTable(0, 0, 0.03);
+    (ppush(PT.glow, s.p[0], s.p[1] - 0.03, s.p[2], 0.07, 1, 0.45, 0.9, 0.7),
+      ppush(
+        PT.glow,
+        l[0] + Math.sin(clock * 2 + s.ph) * 0.02,
+        l[1],
+        l[2] + Math.cos(clock * 2 + s.ph) * 0.02,
+        0.01,
+        1,
+        0.45,
+        0.9,
+        0.9,
+      ));
+  }
+  const t = 0.6 + 0.4 * Math.sin(clock * 6);
+  if (TD.hover >= 0 && TD.hover !== TD.sel) {
+    const s = CITY.pads[TD.hover],
+      l = toTable(s[0], s[1], 0.006);
+    ppush(PT.glow, l[0], l[1], l[2], 0.05, 1, 1, 1, 0.55);
+  }
+  if (TD.sel >= 0) {
+    const s = CITY.pads[TD.sel],
+      l = toTable(s[0], s[1], 0.008);
+    (ppush(PT.glow, l[0], l[1], l[2], 0.06, 1, 0.75, 0.25, 0.5 + 0.4 * t),
+      ppush(PT.glow, s[0], 1.2, s[1], 3, 1, 0.75, 0.25, 0.35 * t));
+  }
+  for (const s of TD.lanes) {
+    const l = CITY.lanes[s];
+    for (let r = (clock * 6) % 7; r < l.len; r += 7) {
+      const [c, d] = lanePoint(l, r),
+        p = toTable(c, d, 0.005);
+      ppush(PT.glow, p[0], p[1], p[2], 0.011, 1, 0.5, 0.3, 0.75);
+    }
+  }
+  for (const s of TD.lanes) {
+    const l = CITY.lanes[s].pts[0];
+    for (let r = 0; r < 4; r++) {
+      const c = clock * 1.5 + (r * TAU) / 4,
+        d = 1.6;
+      ppush(
+        PT.glow,
+        l[0] + Math.cos(c) * d,
+        0.3 + ((clock * 0.7 + r * 0.25) % 1) * 4,
+        l[1] + Math.sin(c) * d,
+        0.9,
+        0.7,
+        0.35,
+        1,
+        0.7,
+      );
+    }
+    ppush(PT.glow, l[0], 1.2, l[1], 6, 0.6, 0.3, 1, 0.3);
+  }
+  const e = coreCol(),
+    [o, a] = CITY.core,
+    n = TD.coreHit;
+  (ppush(PT.glow, o, 0.95, a, 1.2, e[0], e[1], e[2], 0.6),
+    ppush(
+      PT.glow,
+      o,
+      6.2,
+      a,
+      3 + n * 3 + 0.25 * Math.sin(clock * 3),
+      e[0] + n,
+      e[1] + n * 0.3,
+      e[2] + n * 0.3,
+      0.5,
+    ));
+  {
+    const s = toTable(o, a, 0.02);
+    ppush(PT.glow, s[0], s[1], s[2], 0.035, e[0], e[1], e[2], 0.9);
+  }
+  for (const s of TD.flames) {
+    const l = s.t / s.life;
+    (ppush(
+      PT.glow,
+      s.p[0],
+      s.p[1],
+      s.p[2],
+      0.5 + l * 1.4,
+      1,
+      lerp(0.85, 0.3, l),
+      lerp(0.4, 0.05, l),
+      0.85 * (1 - l),
+    ),
+      l > 0.6 &&
+        Math.random() < 0.1 &&
+        puff(s.p, 1, [0.3, 0.25, 0.25], 0.4, 0.5));
+  }
+  for (const s of TD.shells)
+    (bpush(
+      B.cube,
+      s.p[0],
+      s.p[1],
+      s.p[2],
+      0.22,
+      0.22,
+      0.3,
+      Math.atan2(s.v[0], s.v[2]),
+      0,
+      0,
+      0.2,
+      0.18,
+      0.2,
+      1,
+    ),
+      ppush(PT.glow, s.p[0], s.p[1], s.p[2], 0.7, 1, 0.6, 0.25, 0.8));
+  for (const s of TD.strikes)
+    if (s.t < 0) {
+      const l = 0.5 + 0.5 * Math.sin(clock * 20);
+      ppush(PT.glow, s.p[0], 0.4, s.p[2], 3 + l * 2, 1, 0.25, 0.2, 0.6);
+      const r = toTable(s.p[0], s.p[2], 0.01);
+      ppush(PT.glow, r[0], r[1], r[2], 0.05, 1, 0.3, 0.2, 0.9 * l);
+    }
+  if (TD.armed)
+    for (const s of guns)
+      s.aim &&
+        s.aim.t &&
+        s.aim.t.kind === "table" &&
+        ppush(
+          PT.glow,
+          s.aim.point[0],
+          s.aim.point[1] + 0.004,
+          s.aim.point[2],
+          0.07,
+          1,
+          0.25,
+          0.2,
+          0.8,
+        );
+}
+function tdDrawSolid() {
+  if (!TD.on) return;
+  (gl.useProgram(LIT.p),
+    draw(EM.tdPads, IDENT, W1, 0),
+    draw(
+      EM.tdPadsGlow,
+      IDENT,
+      R.phase === "build" ? [0.4, 0.8, 1] : [0.25, 0.45, 0.6],
+      1,
+      1,
+      0.3,
+    ),
+    draw(EM.tdCore, IDENT, W1, 0));
+  const t = coreCol(),
+    e = TD.coreHit,
+    [o, a] = CITY.core,
+    n = 6.2 + Math.sin(clock * 1.3) * 0.2;
+  (draw(EM.tdCoreGlow, IDENT, t, 1, 1, 0.2),
+    draw(
+      EM.tdCrystal,
+      trs(
+        MM,
+        o,
+        n,
+        a,
+        clock * 0.7,
+        0,
+        0,
+        0.75 + e * 0.2,
+        1.25 + e * 0.2,
+        0.75 + e * 0.2,
+      ),
+      [t[0] + e, t[1] + e, t[2] + e],
+      1,
+      1,
+      0.1,
+    ),
+    draw(
+      EM.tdRing,
+      trs(MM, o, n, a, clock * 0.9, 0.5, 0, 1.05, 1.05, 1.05),
+      t,
+      1,
+      1,
+      0.1,
+    ),
+    draw(
+      EM.tdRing,
+      trs(MM, o, n, a, -clock * 1.2, -0.7, 1, 1.3, 1.3, 1.3),
+      t,
+      1,
+      0.8,
+      0.1,
+    ));
+  for (const s of TD.towers) {
+    const l = TWM[s.type],
+      r = TOWERS[s.type],
+      c = s.sc,
+      d = s.emp > 0,
+      p = s.flash > 0 ? FLASH : W1,
+      h =
+        s.lvl >= TMAX
+          ? 1.3 + 0.3 * Math.sin(clock * 8 + s.pad)
+          : 0.75 + 0.12 * s.lvl,
+      i = d
+        ? Math.sin(clock * 30) > 0
+          ? [0.7, 0.12, 0.15]
+          : [0.2, 0.05, 0.06]
+        : [r.col[0] * h, r.col[1] * h, r.col[2] * h];
+    (trs(TDA, s.x, s.y0, s.z, 0, 0, 0, c, c, c),
+      draw(l.base, TDA, p, 0.04),
+      draw(l.glow, TDA, i, 1, 1, 0.2),
+      l.head &&
+        (trs(
+          TDB,
+          s.x,
+          s.y0 + l.hy * c,
+          s.z,
+          s.yaw + (l.spin ? s.spin : 0),
+          l.noPitch ? 0 : s.pitch,
+          0,
+          c,
+          c,
+          c,
+        ),
+        draw(l.head, TDB, p, 0.04),
+        l.hglow && draw(l.hglow, TDB, i, 1, 1, 0.2)));
+  }
+  (draw(TBL.body, IDENT, W1, 0, 1, 0),
+    draw(TBL.mini, IDENT, W1, 0.55, 1, 0),
+    draw(TBL.glow, IDENT, W1, 1, 1, 0));
+  for (const s of [TD.cmd, TD.bld])
+    if (s) {
+      const l = s.x - Math.sin(s.yaw) * 0.025,
+        r = s.z - Math.cos(s.yaw) * 0.025;
+      (draw(
+        EM.bar,
+        trs(MM, l, s.y, r, s.yaw, 0, 0, 0.85, 0.65, 0.03),
+        C.uDark,
+        0.05,
+        1,
+        0,
+      ),
+        draw(
+          EM.bar,
+          trs(
+            MM,
+            l - Math.sin(s.yaw) * 0.03,
+            (s.y - 0.3) / 2,
+            r - Math.cos(s.yaw) * 0.03,
+            s.yaw,
+            0,
+            0,
+            0.06,
+            s.y - 0.3,
+            0.06,
+          ),
+          C.uMetal,
+          0,
+          1,
+          0,
+        ));
+    }
+  for (const s of TD.drones)
+    (trs(
+      MM,
+      s.p[0],
+      s.p[1],
+      s.p[2],
+      s.yaw,
+      0,
+      Math.sin(clock * 3 + s.ph) * 0.15,
+      1.5,
+      1.5,
+      1.5,
+    ),
+      draw(EM.tdDrone, MM, W1, 0.12, 1, 0),
+      draw(EM.tdDroneGlow, MM, [1, 0.45, 0.9], 1, 1, 0));
+}
+function tdDrawTex() {
+  if (TD.on)
+    for (const [t, e] of [
+      [CMDP, TD.cmd],
+      [BLDP, TD.bld],
+    ])
+      e &&
+        drawT(
+          MESH.quad,
+          t.tex,
+          trs(MM, e.x, e.y, e.z, e.yaw, 0, 0, t.w, t.h, 1),
+          W1,
+          1,
+          0,
+          0,
+          0,
+        );
+}
+function tdShadows(t) {
+  if (TD.on)
+    for (const e of TD.towers)
+      t(
+        e.x,
+        Math.min(3, e.y0 * 0.2),
+        e.z,
+        3.2,
+        0,
+        0.4 * Math.min(1, e.drop * 1.5),
+        !0,
+      );
+}
+function tdDrawAdd() {
+  if (!TD.on) return;
+  const t = coreCol(),
+    [e, o] = CITY.core;
+  (draw(
+    MESH.beam,
+    beam(MM, [e, 0.9, o], [0, 1, 0], 4.2, 0.16 + TD.coreHit * 0.2),
+    t,
+    1,
+    0.5 + 0.2 * Math.sin(clock * 7),
+    0,
+  ),
+    draw(
+      MESH.beam,
+      beam(MM, [e, 7.5, o], [0, 1, 0], 120, 0.35 + TD.coreHit * 0.6),
+      t,
+      1,
+      0.2 + 0.06 * Math.sin(clock * 4) + TD.coreHit * 0.3,
+      0,
+    ));
+  for (const a of TD.lanes) {
+    const n = CITY.lanes[a].pts[0];
+    (draw(
+      MESH.shock,
+      trs(MM, n[0], 0.1, n[1], 0, -Math.PI / 2, clock * 1.2, 2.4, 2.4, 2.4),
+      [0.7, 0.35, 1],
+      1,
+      0.7,
+      0,
+    ),
+      draw(
+        MESH.shock,
+        trs(MM, n[0], 0.12, n[1], 0, -Math.PI / 2, -clock * 2, 1.5, 1.5, 1.5),
+        [1, 0.35, 0.8],
+        1,
+        0.6,
+        0,
+      ),
+      draw(
+        MESH.beam,
+        beam(MM, [n[0], 0, n[1]], [0, 1, 0], 40, 0.9),
+        [0.6, 0.3, 1],
+        1,
+        0.12 + 0.04 * Math.sin(clock * 3 + a),
+        0,
+      ));
+  }
+  if (TD.sel >= 0) {
+    const a = CITY.pads[TD.sel],
+      n = towerAt(TD.sel),
+      s = 0.5 + 0.5 * Math.sin(clock * 6);
+    if (
+      (draw(
+        MESH.beam,
+        beam(MM, [a[0], 0, a[1]], [0, 1, 0], 14, 0.25),
+        [1, 0.75, 0.3],
+        1,
+        0.25 + 0.15 * s,
+        0,
+      ),
+      draw(
+        EM.tdPadRing,
+        trs(MM, a[0], 0.09, a[1], 0, 0, 0, 1, 1, 1),
+        [1, 0.75, 0.3],
+        1,
+        0.8,
+        0,
+      ),
+      n)
+    ) {
+      const l = tv(n, "range") * TD.rangeMul,
+        r = toTable(a[0], a[1], 0.004),
+        c = TOWERS[n.type].col;
+      (draw(
+        MESH.shock,
+        trs(MM, a[0], 0.1, a[1], 0, -Math.PI / 2, 0, l, l, l),
+        c,
+        1,
+        0.45,
+        0,
+      ),
+        draw(
+          MESH.shock,
+          trs(
+            MM,
+            r[0],
+            r[1],
+            r[2],
+            0,
+            -Math.PI / 2,
+            0,
+            l * TABLE.k,
+            l * TABLE.k,
+            l * TABLE.k,
+          ),
+          c,
+          1,
+          0.8,
+          0,
+        ));
+    }
+  }
+  if (TD.hover >= 0 && TD.hover !== TD.sel) {
+    const a = CITY.pads[TD.hover];
+    draw(
+      EM.tdPadRing,
+      trs(MM, a[0], 0.09, a[1], 0, 0, 0, 1, 1, 1),
+      [0.8, 0.95, 1],
+      1,
+      0.6,
+      0,
+    );
+  }
+  for (const a of TD.rings) {
+    const n = a.t / a.max,
+      s = a.r * (0.25 + 0.75 * Math.sqrt(n));
+    draw(
+      MESH.shock,
+      trs(MM, a.p[0], a.p[1], a.p[2], 0, -Math.PI / 2, 0, s, s, s),
+      a.col,
+      1,
+      0.8 * (1 - n),
+      0,
+    );
+  }
+  for (const a of TD.towers)
+    a.drop < 1 &&
+      draw(
+        MESH.beam,
+        beam(MM, [a.x, 0, a.z], [0, 1, 0], 40, 0.9 * (1 - a.drop) + 0.2),
+        TOWERS[a.type].col,
+        1,
+        0.35 * (1 - a.drop),
+        0,
+      );
+  for (const a of TD.strikes)
+    if (a.t < 0) {
+      const n = 1 + a.t / 1.3;
+      draw(
+        MESH.shock,
+        trs(
+          MM,
+          a.p[0],
+          0.12,
+          a.p[2],
+          0,
+          -Math.PI / 2,
+          clock * 3,
+          4.5 - n * 1.5,
+          4.5 - n * 1.5,
+          4.5 - n * 1.5,
+        ),
+        [1, 0.25, 0.2],
+        1,
+        0.8,
+        0,
+      );
+    }
+}
+(Object.assign(sfx, {
+  tdGun(t) {
+    if (!gate("tdgun", 0.07)) return;
+    const e = dest(t);
+    (hiss(0.07, 3200, 900, 0.3, 1, 0, e),
+      tone("square", 900, 260, 0.05, 0.06, 0, e));
+  },
+  tdZap(t) {
+    if (!gate("tdzap", 0.1)) return;
+    const e = dest(t);
+    (hiss(0.22, 6e3, 2400, 0.32, 6, 0, e),
+      tone("sawtooth", 70, 150, 0.2, 0.1, 0, e));
+  },
+  tdFrost(t) {
+    if (!gate("tdfrost", 0.2)) return;
+    const e = dest(t);
+    (hiss(0.55, 8e3, 1800, 0.25, 2, 0, e),
+      tone("sine", 1900, 800, 0.35, 0.06, 0, e));
+  },
+  tdMortar(t) {
+    const e = dest(t);
+    (tone("sine", 150, 50, 0.3, 0.5, 0, e),
+      hiss(0.25, 900, 200, 0.45, 0.8, 0, e));
+  },
+  tdFlame(t) {
+    if (!gate("tdflame", 0.2)) return;
+    const e = dest(t);
+    hiss(0.24, 900, 450, 0.3, 0.7, 0, e);
+  },
+  tdRail(t) {
+    const e = dest(t);
+    (tone("sawtooth", 200, 1700, 0.12, 0.12, 0, e),
+      hiss(0.45, 6500, 700, 0.4, 2, 0, e),
+      tone("sine", 80, 38, 0.5, 0.3, 0, e));
+  },
+  tdDrone(t) {
+    if (!gate("tddrone", 0.06)) return;
+    const e = dest(t);
+    (tone("square", 1900, 700, 0.05, 0.05, 0, e),
+      hiss(0.05, 5200, 2e3, 0.12, 2, 0, e));
+  },
+  tdBuild() {
+    (tone("square", 220, 110, 0.15, 0.14),
+      hiss(0.25, 1200, 300, 0.25, 1),
+      arp([523, 784, 1047], 0.06, 0.25, 0.12, 0.12));
+  },
+  tdLand(t) {
+    const e = dest(t);
+    (tone("sine", 95, 38, 0.35, 0.55, 0, e),
+      hiss(0.35, 1500, 250, 0.45, 0.8, 0, e));
+  },
+  tdUpgrade() {
+    arp([523, 659, 784, 1047, 1319], 0.05, 0.3, 0.13, 0, "square");
+  },
+  tdSell() {
+    arp([784, 523, 392], 0.06, 0.25, 0.12);
+  },
+  tdSelect() {
+    tone("triangle", 1400, 1900, 0.06, 0.09);
+  },
+  tdClick() {
+    tone("square", 2200, 0, 0.03, 0.05);
+  },
+  tdCore(t) {
+    const e = dest(t);
+    (tone("sawtooth", 320, 110, 0.55, 0.3, 0, e),
+      tone("square", 620, 0, 0.12, 0.1),
+      tone("square", 620, 0, 0.12, 0.1, 0.22));
+  },
+  tdReady() {
+    arp([392, 523, 659, 784], 0.08, 0.3, 0.15, 0, "square");
+  },
+  tdWhistle(t) {
+    const e = dest([t[0], 25, t[2]]);
+    (tone("sine", 2400, 420, 1.25, 0.16, 0, e),
+      tone("sine", 2420, 430, 1.25, 0.08, 0, e));
+  },
+  tdEmp(t) {
+    const e = dest(t);
+    (tone("sawtooth", 1300, 55, 0.8, 0.22, 0, e),
+      hiss(0.8, 4200, 200, 0.45, 3, 0, e));
+  },
+}),
+  (SCORE.td = {
+    bass: [65.41, 51.91, 58.27, 49],
+    arp: [
+      [261.63, 311.13, 392],
+      [207.65, 261.63, 311.13],
+      [233.08, 293.66, 349.23],
+      [196, 246.94, 293.66],
+    ],
+  }));

@@ -1,0 +1,13 @@
+{
+  "name": "dusk-range",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Dusk Range WebXR frontier shooter and tower defense",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.*",
+    "check": "node scripts/check.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
