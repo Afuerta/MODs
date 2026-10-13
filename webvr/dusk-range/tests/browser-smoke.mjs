@@ -21,11 +21,12 @@ const args = process.env.CHROMIUM_ARGS
       "--use-angle=swiftshader",
       "--enable-unsafe-swiftshader",
     ];
-const browser = await chromium.launch({
+const launchOptions = {
   headless: true,
   args,
   ...(executablePath ? { executablePath } : {}),
-});
+};
+let browser = await chromium.launch(launchOptions);
 const baseURL = process.env.DUSK_BASE_URL || "http://localhost:8775";
 const screenshots = process.env.DUSK_SCREENSHOTS;
 if (screenshots) await mkdir(screenshots, { recursive: true });
@@ -196,7 +197,10 @@ try {
     false,
     "Escape resumes an existing pause",
   );
-  await context.close();
+  // A fresh browser also supports single-process CI Chromium builds, which
+  // cannot reliably replace their last incognito context.
+  await browser.close();
+  browser = await chromium.launch(launchOptions);
 
   const mobile = await browser.newContext({
     viewport: { width: 390, height: 844 },

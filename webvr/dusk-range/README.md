@@ -64,4 +64,4 @@ The build, 25 gameplay/session regressions, and real WebGL2 browser flows were t
 
 ## Existing external assets
 
-The recovered game optionally loads Kenney models from the Kenney Starter Kit FPS and Starter Kit 3D Platformer repositories through jsDelivr. These asset packs are credited to Kenney, distributed under CC0; their references remain in `src/js/10.js`. Procedural models remain available if those downloads fail. Google Fonts supplies Saira Semi Condensed and Saira Stencil One, with local font fallbacks. Neither optional models nor fonts are newly bundled here.
+The recovered game optionally loads Kenney models from the Kenney Starter Kit FPS and Starter Kit 3D Platformer repositories through jsDelivr. The references remain in `src/js/10.js`; see the upstream Kenney repositories for asset provenance and license terms. Procedural models remain available if those downloads fail. Google Fonts supplies Saira Semi Condensed and Saira Stencil One, with local font fallbacks. Neither optional models nor fonts are newly bundled here.
