@@ -1,0 +1,183 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><meta name='theme-color' content='#16122a'><meta name='description' content='Dusk Range: a WebXR shooter for Meta Quest and Quest 3 mixed reality: a target range, Quick Draw duels, survival waves, Night Siege zombie waves with loot and level-ups, and Gridlock, a neon city tower defense with a war table and wingman drones.'>
+<title>Dusk Range</title>
+<link rel='preconnect' href='https://fonts.googleapis.com'>
+<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+<link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;600;700&family=Saira+Stencil+One&display=swap'>
+<style>
+:root{
+--night:#16122a;
+--plum:#2b2347;
+--clay:#ff7a2a;
+--gold:#ffd257;
+--sand:#f3e3c8;
+--haze:#b9a6d3;
+--ring-gold:#f6c21c; --ring-red:#e23b2e; --ring-blue:#2f86d6; --ring-black:#1d1b22; --ring-white:#f3eee2;
+--display:'Saira Stencil One', Impact, 'Arial Narrow Bold', sans-serif;
+--body:'Saira Semi Condensed', 'Arial Narrow', system-ui, sans-serif;
+color-scheme: dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--sand);font-family:var(--body);font-size:16px;line-height:1.45;overflow:hidden}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:none;background:var(--night)}
+.overlay{position:fixed;inset:0;overflow-y:auto;display:flex;flex-direction:column;align-items:flex-start;padding:16px;padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top, rgb(22 18 42 / .94) 0%, rgb(22 18 42 / .78) 48%, rgb(22 18 42 / .3) 82%, rgb(22 18 42 / .1) 100%)}
+.card{width:calc(100% - 2 * clamp(0px,4vw,56px));max-width:50rem;display:grid;gap:14px;margin-block-start:auto;margin-inline:clamp(0px,4vw,56px);margin-block-end:clamp(0px,4vh,40px)}
+.eyebrow{margin:0;font-weight:600;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:var(--haze)}
+h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(3.4rem,12vw,6.4rem);line-height:.86;letter-spacing:.01em;text-wrap:balance;color:var(--sand)}
+h1 span{color:var(--clay)}
+.lede{margin:0;max-width:60ch;font-size:1.12rem;line-height:1.4;color:var(--sand);text-shadow:0 1px 12px rgb(22 18 42 / .8)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-block-start:4px}
+button{font:inherit;cursor:pointer;border-radius:3px;-webkit-tap-highlight-color:transparent}
+.btn-vr{font-family:var(--display);font-size:1.55rem;line-height:1;padding:.6em 1.15em .55em;background:var(--clay);color:var(--night);border:0;box-shadow:0 0 0 0 rgb(255 122 42 / .5);transition:transform .12s ease, box-shadow .2s ease}
+.btn-vr:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px -6px rgb(255 122 42 / .7)}
+.btn-flat{font-weight:600;font-size:1.05rem;letter-spacing:.02em;padding:.7em 1.1em;background:rgb(22 18 42 / .35);color:var(--sand);border:2px solid rgb(243 227 200 / .45)}
+.btn-flat:hover{border-color:var(--sand)}
+.btn-ar{background:#5fd3c0}
+.fov{display:flex;align-items:center;gap:10px;font-size:.92rem;color:var(--haze)}
+.fov input{flex:1;max-width:16rem;accent-color:var(--clay)}
+.fov output{font-family:var(--display);color:var(--sand);min-width:3ch}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+button:disabled{opacity:.42;cursor:not-allowed}
+.note{margin:0;color:var(--haze);font-size:.98rem;max-width:60ch}
+.note strong{color:var(--sand);font-weight:600}
+.note a{color:var(--gold);text-underline-offset:3px}
+.legend{list-style:none;margin:0;padding:12px 0 0;border-top:1px solid rgb(185 166 211 / .25);display:flex;flex-wrap:wrap;gap:8px 16px;font-variant-numeric:tabular-nums}
+.legend li{display:flex;align-items:center;gap:7px;font-weight:700;font-size:1rem}
+.legend .lbl{font-weight:400;color:var(--haze);font-size:.9rem}
+.sw{width:15px;height:15px;border-radius:50%;background:var(--c);box-shadow:0 0 0 1.5px rgb(243 227 200 / .4)}
+.sw.clay{border-radius:50%/40%;width:20px;height:11px}
+.sw.dud{background:var(--ring-black);position:relative;box-shadow:0 0 0 2px var(--ring-red)}
+.sw.dud::before,.sw.dud::after{content:'';position:absolute;left:2px;right:2px;top:6.5px;height:2px;background:var(--ring-red);transform:rotate(45deg)}
+.sw.dud::after{transform:rotate(-45deg)}
+.best{margin:0;font-size:.95rem;color:var(--haze);font-variant-numeric:tabular-nums}
+.best b{font-family:var(--display);font-weight:400;font-size:1.25rem;color:var(--gold);letter-spacing:.02em}
+#reticle{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;pointer-events:none;border:2px solid var(--gold);border-radius:50%;box-shadow:0 0 0 1px rgb(22 18 42 / .6), inset 0 0 0 1px rgb(22 18 42 / .6);will-change:transform}
+#reticle::after{content:'';position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--clay)}
+#menuBtn{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:12px;font-weight:600;font-size:.95rem;padding:.45em .9em;background:rgb(22 18 42 / .6);color:var(--sand);border:1.5px solid rgb(243 227 200 / .4)}
+#hint{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);margin:0;padding:.35em .8em;font-size:.9rem;color:var(--haze);background:rgb(22 18 42 / .55);border-radius:3px;pointer-events:none;white-space:nowrap}
+.modes{margin:0;padding:12px 0 0;border-top:1px solid rgb(185 166 211 / .25);display:grid;grid-template-columns:repeat(auto-fill,minmax(9.2rem,1fr));gap:12px 20px}
+.modes div{min-width:0}
+.modes dt{font-family:var(--display);font-size:1.15rem;color:var(--sand);letter-spacing:.02em}
+.modes dd{margin:2px 0 0;font-size:.92rem;line-height:1.35;color:var(--haze)}
+.modes div:nth-child(2) dt{color:var(--clay)}
+.modes div:nth-child(3) dt{color:#8fb4e8}
+.modes div:nth-child(4) dt{color:#ff7ac8}
+.modes div:nth-child(5) dt{color:#e0a85a}
+.mode-play{margin-top:10px;padding:.4em .8em;min-height:40px;color:var(--sand);background:rgb(243 227 200 / .07);border:1px solid rgb(243 227 200 / .35);font-weight:700}
+.mode-play:hover:not(:disabled){background:rgb(255 122 42 / .18);border-color:var(--clay)}
+#pauseNote{padding:12px 14px;border-left:3px solid var(--gold);background:rgb(255 210 87 / .08);color:var(--sand)}
+.comfort-note{font-size:.85rem;color:var(--haze);margin:0}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:6px 24px;margin:0;padding:12px 0 0;border-top:1px solid rgb(185 166 211 / .25);font-size:.92rem;color:var(--haze)}
+.howto h2{margin:0 0 2px;font-family:var(--display);font-weight:400;font-size:1.05rem;color:var(--sand);letter-spacing:.03em}
+.howto p{margin:0;line-height:1.5}
+.howto kbd{font-family:var(--body);font-weight:700;color:var(--sand)}
+.settings{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:0;padding:12px 0 0;border-top:1px solid rgb(185 166 211 / .25);font-size:.92rem;color:var(--haze)}
+.settings label{display:flex;align-items:center;gap:7px}
+.settings select{font:inherit;color:var(--sand);background:rgb(22 18 42 / .7);border:1.5px solid rgb(243 227 200 / .35);border-radius:3px;padding:.25em .4em}
+.settings select:focus-visible,.settings input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.settings input[type=checkbox]{accent-color:var(--clay);width:1.05rem;height:1.05rem}
+#hud{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;display:grid;justify-items:end;gap:4px;pointer-events:none;font-variant-numeric:tabular-nums;text-shadow:0 1px 6px rgb(22 18 42 / .9)}
+#hudHearts{font-size:1.5rem;letter-spacing:.06em;color:#ff5a4a;line-height:1}
+#hudHearts .off{color:rgb(243 227 200 / .3)}
+#hudHearts .sh{color:#8fd8ff}
+#hudInfo{font-family:var(--display);font-size:1.3rem;color:var(--gold)}
+#hudXP{font-size:.85rem;color:var(--haze);letter-spacing:.06em}
+#hudXP i{display:inline-block;vertical-align:middle;width:120px;height:6px;margin-left:8px;background:rgb(185 166 211 / .25);border-radius:3px;overflow:hidden}
+#hudXP i b{display:block;height:100%;background:#7fe0a0}
+#hudTasks{font-size:.82rem;color:var(--haze);text-align:right;line-height:1.35}
+#hudTasks .ok{color:#7fe0a0;text-decoration:line-through}
+#hudGun{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));font-family:var(--display);font-size:1.15rem;color:var(--sand)}
+#arrows{position:fixed;inset:0;pointer-events:none}
+.arrow{position:absolute;left:0;top:0;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:20px solid var(--c,#ffb35a);margin:-10px 0 0 -11px;filter:drop-shadow(0 0 3px rgb(22 18 42 / .8))}
+@media (max-width:600px){ .overlay{background:linear-gradient(to top, rgb(22 18 42 / .96) 0%, rgb(22 18 42 / .88) 62%, rgb(22 18 42 / .2) 88%, rgb(22 18 42 / 0) 100%)} .lede{font-size:1rem} .btn-vr{font-size:1.35rem} }
+</style>
+</head><body>
+<canvas id='gl' aria-label='Dusk Range play area'></canvas>
+<div id='reticle' hidden></div>
+<button id='menuBtn' type='button' hidden>Pause</button>
+<p id='hint' hidden>Click to fire · Esc for menu</p>
+<main id='menu' class='overlay'>
+<div class='card'>
+<p class='eyebrow'>VR &amp; mixed reality · room-scale · five games</p>
+<h1>Dusk <span>Range</span></h1>
+<p class='lede'>Two guns, one desert at sundown. Warm up on paper targets, outdraw bandits, survive robot and alien waves, hold a ghost town against the dead, or defend a neon city from a war table.</p>
+<div class='actions'>
+<button id='vrBtn' class='btn-vr' type='button' disabled>Enter VR</button>
+<button id='arBtn' class='btn-vr btn-ar' type='button' hidden>Enter MR</button>
+<button id='flatBtn' class='btn-flat' type='button'>Play on this screen</button>
+<button id='restartBtn' class='btn-flat' type='button' hidden>Return to game hub</button>
+</div>
+<p id='pauseNote' class='note' role='status' hidden>Game paused. Resume to continue, or return to the hub to start a new game.</p>
+<p id='vrNote' class='note' role='status'>Checking for a VR headset…</p>
+<dl id='modePicker' class='modes'>
+<div><dt>Target range</dt><dd>60 seconds. Rings score 2 to 10, clay pigeons 25. Leave the red X alone.<br><button class='mode-play' data-mode='range' type='button' aria-label='Play Target range on this screen' disabled>Play range</button></dd></div>
+<div><dt>Survival</dt><dd>Endless waves with a boss every fifth. Pick a random weapon or perk after each wave. Duck and sidestep to dodge.<br><button class='mode-play' data-mode='run' type='button' aria-label='Play Survival on this screen' disabled>Play survival</button></dd></div>
+<div><dt>Night Siege</dt><dd>Zombie waves in a ghost town. Kills pay gold for the Lucky Coffin and the trader. Souls from each run buy permanent upgrades at the Armory.<br><button class='mode-play' data-mode='siege' type='button' aria-label='Play Night Siege on this screen' disabled>Play siege</button></dd></div>
+<div><dt>Gridlock</dt><dd>Tower defense in a neon city. Build and upgrade towers from a war table, buy wingman drones, call airstrikes, and shoot what gets through.<br><button class='mode-play' data-mode='td' type='button' aria-label='Play Gridlock on this screen' disabled>Play gridlock</button></dd></div>
+<div><dt>Quick Draw</dt><dd>Holster your guns, wait for the bell, then outdraw one, two, then three bandits. Every round they get faster.<br><button class='mode-play' data-mode='duel' type='button' aria-label='Play Quick Draw on this screen' disabled>Play quick draw</button></dd></div>
+</dl>
+<div class='howto'>
+<div><h2>In a headset</h2><p><kbd>Trigger</kbd> shoots · point a gun at the floor or press <kbd>A / X</kbd> to reload · flick a <kbd>thumbstick</kbd> to turn · grip a long gun's barrel with your other hand to steady it · step and duck to dodge.</p></div>
+<div><h2>On this screen</h2><p><kbd>Click</kbd> to shoot · <kbd>right-click</kbd> to aim · <kbd>R</kbd> reload · <kbd>WASD</kbd> move · <kbd>Q / E</kbd> turn · <kbd>C</kbd> duck · <kbd>Esc</kbd> pause / resume. Pick a game above, or shoot a target in the hub.</p></div>
+</div>
+<div class='settings' role='group' aria-label='Settings'>
+<label>Difficulty <select id='setDiff'><option value='easy'>Easy</option><option value='normal'>Normal</option><option value='hard'>Hard</option></select></label>
+<label>Aim assist <select id='setAssist'><option value='off'>Off</option><option value='low'>Low</option><option value='high'>High</option></select></label>
+<label>VR turning <select id='setTurn'><option value='snap45'>Snap 45°</option><option value='snap30'>Snap 30°</option><option value='smooth'>Smooth</option><option value='off'>Body only</option></select></label>
+<label><input id='setSeated' type='checkbox'> Seated play</label>
+<label>Graphics <select id='setGfx'><option value='balanced'>Balanced</option><option value='high'>High</option><option value='ultra'>Ultra</option></select></label>
+<label><input id='setMusic' type='checkbox' checked> Music</label>
+<label class='fov'>Screen field of view <input id='fovIn' type='range' min='50' max='110' step='1' value='75'> <output id='fovOut'>75°</output></label>
+</div>
+<p class='comfort-note'>Set your comfort options before entering VR. Snap turning is the default; seated play raises your view. Your settings are saved on this device.</p>
+<p class='best'>Your best: <b id='bestOut'>—</b></p>
+</div>
+</main>
+<div id='hud' hidden>
+<div id='hudHearts' aria-label='Health'></div>
+<div id='hudInfo'></div>
+<div id='hudXP'></div>
+<div id='hudTasks'></div>
+<div id='hudGun'></div>
+</div>
+<div id='arrows' aria-hidden='true'></div>
+<script src='js/01.js'></script>
+<script src='js/02.js'></script>
+<script src='js/03.js'></script>
+<script src='js/04.js'></script>
+<script src='js/05.js'></script>
+<script src='js/06.js'></script>
+<script src='js/07.js'></script>
+<script src='js/08.js'></script>
+<script src='js/09.js'></script>
+<script src='js/10.js'></script>
+<script src='js/11.js'></script>
+<script src='js/12.js'></script>
+<script src='js/13.js'></script>
+<script src='js/14.js'></script>
+<script src='js/15.js'></script>
+<script src='js/16.js'></script>
+<script src='js/17.js'></script>
+<script src='js/18.js'></script>
+<script src='js/19.js'></script>
+<script src='js/20.js'></script>
+<script src='js/21.js'></script>
+<script src='js/22.js'></script>
+<script src='js/23.js'></script>
+<script src='js/24.js'></script>
+<script src='js/25.js'></script>
+<script src='js/26.js'></script>
+<script src='js/27.js'></script>
+<script src='js/28.js'></script>
+<script src='js/29.js'></script>
+<script src='js/30.js'></script>
+<script src='js/31.js'></script>
+<script src='js/32.js'></script>
+<script src='js/33.js'></script>
+<script src='js/34.js'></script>
+<script src='js/35.js'></script>
+<script src='js/36.js'></script>
+<script src='js/37.js'></script>
+<script src='js/38.js'></script>
+<script src='js/39.js'></script>
+</body></html>
