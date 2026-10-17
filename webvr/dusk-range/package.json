@@ -1,0 +1,10 @@
+{
+  "name": "dusk-range",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node tools/check-scripts.cjs",
+    "serve": "python3 -m http.server 8080 --directory src"
+  }
+}
